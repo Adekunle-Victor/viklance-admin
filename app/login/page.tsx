@@ -2,28 +2,29 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { login, clearError } from "@/store/slices/auth.slice";
+import { gooeyToast } from "goey-toast";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const router    = useRouter();
+  const dispatch  = useAppDispatch();
+  const { loading, error } = useAppSelector((s) => s.auth);
+
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
   const [showPass, setShowPass] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
-    // placeholder — replace with real API call
-    setTimeout(() => {
-      setLoading(false);
-      if (email === "admin@viklance.dev" && password === "password") {
-        router.push("/dashboard");
-      } else {
-        setError("Invalid email or password.");
-      }
-    }, 1000);
+    dispatch(clearError());
+    const result = await dispatch(login({ email, password }));
+    if (login.fulfilled.match(result)) {
+      gooeyToast.success("Welcome back!", { description: "You are now signed in." });
+      router.push("/dashboard");
+    } else {
+      gooeyToast.error("Sign in failed", { description: String((result as any).error?.message ?? "Invalid credentials") });
+    }
   };
 
   return (
@@ -58,16 +59,6 @@ export default function LoginPage() {
           <p className="text-sm text-neutral-500 mb-7">
             Enter your credentials to continue.
           </p>
-
-          {error && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm font-medium px-4 py-3 rounded-xl mb-5">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="shrink-0">
-                <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.3" />
-                <path d="M7 4.5v3M7 9.5v.01" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-              </svg>
-              {error}
-            </div>
-          )}
 
           <form onSubmit={submit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">

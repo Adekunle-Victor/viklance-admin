@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { ALL_PAYOUTS, Payout, PayoutStatus } from "@/lib/payouts.types";
+import { useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchPayouts } from "@/store/slices/payouts.slice";
 import PayoutsStats from "@/components/payouts/PayoutsStats.component";
 import PayoutsTable from "@/components/payouts/PayoutsTable.component";
 
@@ -9,27 +10,34 @@ const TABS = ["All", "Pending", "Paid", "Rejected"] as const;
 type Tab = typeof TABS[number];
 
 export default function PayoutsPage() {
-  const [tab, setTab]       = useState<Tab>("All");
-  const [payouts, setPayouts] = useState<Payout[]>(ALL_PAYOUTS);
+  const dispatch = useAppDispatch();
+  const { items, loading, error } = useAppSelector((s) => s.payouts);
 
-  const filtered = payouts.filter((p) => tab === "All" || p.status === tab);
+  const [tab, setTab] = useState<Tab>("All");
 
-  const markPaid = (id: number) =>
-    setPayouts((prev) => prev.map((p) => p.id === id ? { ...p, status: "Paid" as PayoutStatus, paid: "Today" } : p));
+  useEffect(() => {
+    dispatch(fetchPayouts());
+  }, [dispatch]);
 
-  const reject = (id: number) =>
-    setPayouts((prev) => prev.map((p) => p.id === id ? { ...p, status: "Rejected" as PayoutStatus } : p));
+  const filtered = items.filter((p) => tab === "All" || p.status === tab);
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-black text-neutral-900 tracking-tight">Payouts</h1>
-        <p className="text-sm text-neutral-500 mt-1">Manage referral payout requests.</p>
+        <p className="text-sm text-neutral-500 mt-1">
+          {loading ? "Loading…" : "Manage referral payout requests."}
+        </p>
       </div>
 
-      <PayoutsStats />
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm font-medium px-4 py-3 rounded-xl">
+          {error}
+        </div>
+      )}
 
-      {/* Tabs */}
+      <PayoutsStats payouts={items} />
+
       <div className="flex items-center gap-1 bg-neutral-100 border border-neutral-200 rounded-xl p-1 w-fit">
         {TABS.map((t) => (
           <button
@@ -40,13 +48,13 @@ export default function PayoutsPage() {
           >
             {t}
             <span className="ml-1 opacity-60">
-              {t === "All" ? payouts.length : payouts.filter((p) => p.status === t).length}
+              {t === "All" ? items.length : items.filter((p) => p.status === t).length}
             </span>
           </button>
         ))}
       </div>
 
-      <PayoutsTable payouts={filtered} onMarkPaid={markPaid} onReject={reject} />
+      <PayoutsTable payouts={filtered} loading={loading} />
     </div>
   );
 }

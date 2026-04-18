@@ -1,13 +1,38 @@
 "use client";
 
+import { useState } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { updateLeadStatus } from "@/store/slices/leads.slice";
 import { Lead, LeadStatus, STATUS_COLORS } from "@/lib/leads.types";
+import { gooeyToast } from "goey-toast";
 
 interface LeadDrawerProps {
-  lead:    Lead;
-  onClose: () => void;
+  lead:           Lead;
+  onClose:        () => void;
+  onStatusChange: (updated: Lead) => void;
 }
 
-export default function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
+}
+
+export default function LeadDrawer({ lead, onClose, onStatusChange }: LeadDrawerProps) {
+  const dispatch   = useAppDispatch();
+  const [busy, setBusy] = useState(false);
+
+  const changeStatus = async (status: LeadStatus) => {
+    if (status === lead.status || busy) return;
+    setBusy(true);
+    const result = await dispatch(updateLeadStatus({ id: String(lead.id), status }));
+    setBusy(false);
+    if (updateLeadStatus.fulfilled.match(result)) {
+      gooeyToast.success("Status updated", { description: `Moved to "${status}"` });
+      onStatusChange(result.payload as Lead);
+    } else {
+      gooeyToast.error("Update failed", { description: "Could not change lead status." });
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
@@ -42,11 +67,11 @@ export default function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
           {/* Details grid */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Company",  value: lead.company        },
-              { label: "Service",  value: lead.service        },
-              { label: "Budget",   value: lead.budget         },
-              { label: "Date",     value: lead.date           },
-              { label: "Referred", value: lead.ref ?? "Direct" },
+              { label: "Company",  value: lead.company ?? "—"           },
+              { label: "Service",  value: lead.service                   },
+              { label: "Budget",   value: lead.budget ?? "—"            },
+              { label: "Date",     value: formatDate(lead.created_at)    },
+              { label: "Referred", value: lead.ref_code ?? "Direct"      },
             ].map((d) => (
               <div key={d.label} className="bg-neutral-50 border border-neutral-200 rounded-xl p-3">
                 <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">{d.label}</p>
@@ -70,7 +95,9 @@ export default function LeadDrawer({ lead, onClose }: LeadDrawerProps) {
               {(["New", "In Review", "Replied", "Closed"] as LeadStatus[]).map((s) => (
                 <button
                   key={s}
-                  className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all
+                  disabled={busy}
+                  onClick={() => changeStatus(s)}
+                  className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all disabled:opacity-50
                     ${lead.status === s
                       ? "bg-neutral-900 text-white border-neutral-900"
                       : "border-neutral-200 text-neutral-600 hover:border-neutral-400"}`}

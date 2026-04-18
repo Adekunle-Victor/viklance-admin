@@ -1,13 +1,19 @@
-import { ALL_REFERRERS } from "@/lib/referrals.types";
+"use client";
 
-const stats = [
-  { label: "Total Referrers",   value: ALL_REFERRERS.length.toString() },
-  { label: "Total Clicks",      value: ALL_REFERRERS.reduce((a, r) => a + r.clicks, 0).toString() },
-  { label: "Total Conversions", value: ALL_REFERRERS.reduce((a, r) => a + r.conversions, 0).toString() },
-  { label: "Total Paid Out",    value: `₦${ALL_REFERRERS.filter((r) => r.payoutStatus === "Paid").reduce((a, r) => a + r.earned, 0).toLocaleString()}` },
-];
+import { Referrer } from "@/lib/referrals.types";
 
-export default function ReferralsStats() {
+interface ReferralsStatsProps {
+  referrers: Referrer[];
+}
+
+export default function ReferralsStats({ referrers }: ReferralsStatsProps) {
+  const stats = [
+    { label: "Total Referrers",   value: referrers.length.toString() },
+    { label: "Total Clicks",      value: referrers.reduce((a, r) => a + r.clicks, 0).toString() },
+    { label: "Total Conversions", value: referrers.reduce((a, r) => a + Number(r.conversions), 0).toString() },
+    { label: "Total Paid Out",    value: `₦${referrers.filter((r) => r.payout_status === "Paid").reduce((a, r) => a + Number(r.earned), 0).toLocaleString()}` },
+  ];
+
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
       {stats.map((s) => (

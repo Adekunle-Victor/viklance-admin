@@ -1,26 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { ALL_PROJECTS, Project, ProjectStatus } from "@/lib/projects.types";
+import { useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchProjects } from "@/store/slices/projects.slice";
+import { Project } from "@/lib/projects.types";
 import ProjectsTable from "@/components/projects/ProjectsTable.component";
 import ProjectDrawer from "@/components/projects/ProjectDrawer.component";
 
 const TABS = ["All", "In Progress", "Under Review", "Completed", "On Hold"] as const;
 type Tab = typeof TABS[number];
 
-const stats = [
-  { label: "Total Projects",   value: ALL_PROJECTS.length.toString() },
-  { label: "In Progress",      value: ALL_PROJECTS.filter((p) => p.status === "In Progress").length.toString() },
-  { label: "Completed",        value: ALL_PROJECTS.filter((p) => p.status === "Completed").length.toString() },
-  { label: "Total Value",      value: "₦53,000,000+" },
-];
-
 export default function ProjectsPage() {
+  const dispatch = useAppDispatch();
+  const { items, loading, error } = useAppSelector((s) => s.projects);
+
   const [tab, setTab]           = useState<Tab>("All");
   const [search, setSearch]     = useState("");
   const [selected, setSelected] = useState<Project | null>(null);
 
-  const filtered = ALL_PROJECTS.filter((p) => {
+  useEffect(() => {
+    dispatch(fetchProjects());
+  }, [dispatch]);
+
+  const filtered = items.filter((p) => {
     const matchTab    = tab === "All" || p.status === tab;
     const matchSearch = search === "" ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -28,29 +30,42 @@ export default function ProjectsPage() {
     return matchTab && matchSearch;
   });
 
+  const stats = [
+    { label: "Total Projects", value: items.length.toString() },
+    { label: "In Progress",    value: items.filter((p) => p.status === "In Progress").length.toString() },
+    { label: "Completed",      value: items.filter((p) => p.status === "Completed").length.toString() },
+    { label: "On Hold",        value: items.filter((p) => p.status === "On Hold").length.toString() },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-neutral-900 tracking-tight">Projects</h1>
-          <p className="text-sm text-neutral-500 mt-1">{ALL_PROJECTS.length} total projects</p>
+          <p className="text-sm text-neutral-500 mt-1">
+            {loading ? "Loading…" : `${items.length} total projects`}
+          </p>
         </div>
         <button className="self-start sm:self-auto bg-neutral-900 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-neutral-700 transition-colors">
           + New Project
         </button>
       </div>
 
-      {/* Stats */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 text-sm font-medium px-4 py-3 rounded-xl">
+          {error}
+        </div>
+      )}
+
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="bg-white border border-neutral-200 rounded-2xl p-5">
             <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500 mb-2">{s.label}</p>
-            <p className="text-2xl font-black text-neutral-900 tracking-tight">{s.value}</p>
+            <p className="text-2xl font-black text-neutral-900 tracking-tight">{loading ? "—" : s.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -79,8 +94,15 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      <ProjectsTable projects={filtered} onSelect={setSelected} />
-      {selected && <ProjectDrawer project={selected} onClose={() => setSelected(null)} />}
+      <ProjectsTable projects={filtered} loading={loading} onSelect={setSelected} />
+
+      {selected && (
+        <ProjectDrawer
+          project={selected}
+          onClose={() => setSelected(null)}
+          onStatusChange={(updated) => setSelected(updated)}
+        />
+      )}
     </div>
   );
 }

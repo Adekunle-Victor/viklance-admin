@@ -1,21 +1,22 @@
 "use client";
 
-import { ALL_LEADS } from "@/lib/leads.types";
+import { Lead } from "@/lib/leads.types";
 
 export const TABS = ["All", "New", "In Review", "Replied", "Closed"] as const;
 export type Tab = typeof TABS[number];
 
 interface LeadsFiltersProps {
+  leads:    Lead[];
   tab:      Tab;
   search:   string;
   onTab:    (t: Tab) => void;
   onSearch: (s: string) => void;
 }
 
-export default function LeadsFilters({ tab, search, onTab, onSearch }: LeadsFiltersProps) {
+export default function LeadsFilters({ leads, tab, search, onTab, onSearch }: LeadsFiltersProps) {
   const counts = TABS.map((t) => ({
     tab: t,
-    count: t === "All" ? ALL_LEADS.length : ALL_LEADS.filter((l) => l.status === t).length,
+    count: t === "All" ? leads.length : leads.filter((l) => l.status === t).length,
   }));
 
   return (

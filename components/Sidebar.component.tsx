@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useAppDispatch } from "@/store/hooks";
+import { logout } from "@/store/slices/auth.slice";
+import { gooeyToast } from "goey-toast";
 
 const nav = [
   {
@@ -73,18 +77,49 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
-  const pathname = usePathname();
-  const router   = useRouter();
+  const pathname  = usePathname();
+  const router    = useRouter();
+  const dispatch  = useAppDispatch();
+  const [confirm, setConfirm] = useState(false);
 
   const navigate = (href: string) => {
     router.push(href);
     onClose();
   };
 
-  const logout = () => router.push("/login");
+  const handleLogout = async () => {
+    setConfirm(false);
+    await dispatch(logout());
+    gooeyToast.success("Signed out", { description: "You have been logged out." });
+    router.push("/login");
+  };
 
   return (
     <>
+      {/* Logout confirmation modal */}
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 p-6">
+            <h2 className="text-sm font-bold text-neutral-900 mb-1">Sign out?</h2>
+            <p className="text-sm text-neutral-500 mb-6">You will be returned to the login page.</p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setConfirm(false)}
+                className="px-4 py-2 text-sm font-semibold text-neutral-600 hover:text-neutral-900 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 text-sm font-semibold bg-neutral-900 text-white rounded-xl hover:bg-neutral-700 transition-colors"
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-60 bg-white border-r border-neutral-200 flex flex-col transition-transform duration-300
           ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
@@ -121,7 +156,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         {/* Logout */}
         <div className="p-3 border-t border-neutral-200 shrink-0">
           <button
-            onClick={logout}
+            onClick={() => setConfirm(true)}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 transition-all w-full"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

@@ -1,13 +1,39 @@
 "use client";
 
+import { useState } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { updateProjectStatus } from "@/store/slices/projects.slice";
 import { Project, ProjectStatus, PROJECT_STATUS_COLORS } from "@/lib/projects.types";
+import { gooeyToast } from "goey-toast";
 
 interface ProjectDrawerProps {
-  project: Project;
-  onClose: () => void;
+  project:        Project;
+  onClose:        () => void;
+  onStatusChange: (updated: Project) => void;
 }
 
-export default function ProjectDrawer({ project, onClose }: ProjectDrawerProps) {
+function formatDate(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
+}
+
+export default function ProjectDrawer({ project, onClose, onStatusChange }: ProjectDrawerProps) {
+  const dispatch    = useAppDispatch();
+  const [busy, setBusy] = useState(false);
+
+  const changeStatus = async (status: ProjectStatus) => {
+    if (status === project.status || busy) return;
+    setBusy(true);
+    const result = await dispatch(updateProjectStatus({ id: String(project.id), status }));
+    setBusy(false);
+    if (updateProjectStatus.fulfilled.match(result)) {
+      gooeyToast.success("Status updated", { description: `Moved to "${status}"` });
+      onStatusChange(result.payload as Project);
+    } else {
+      gooeyToast.error("Update failed", { description: "Could not change project status." });
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
@@ -23,7 +49,6 @@ export default function ProjectDrawer({ project, onClose }: ProjectDrawerProps) 
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
-          {/* Header */}
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-black text-neutral-900 text-lg">{project.name}</p>
@@ -34,13 +59,12 @@ export default function ProjectDrawer({ project, onClose }: ProjectDrawerProps) 
             </span>
           </div>
 
-          {/* Details grid */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Service",  value: project.service  },
-              { label: "Budget",   value: project.budget   },
-              { label: "Started",  value: project.start    },
-              { label: "Deadline", value: project.deadline },
+              { label: "Service",  value: project.service              },
+              { label: "Budget",   value: project.budget ?? "—"        },
+              { label: "Started",  value: formatDate(project.start_date) },
+              { label: "Deadline", value: formatDate(project.deadline)  },
             ].map((d) => (
               <div key={d.label} className="bg-neutral-50 border border-neutral-200 rounded-xl p-3">
                 <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">{d.label}</p>
@@ -49,22 +73,24 @@ export default function ProjectDrawer({ project, onClose }: ProjectDrawerProps) 
             ))}
           </div>
 
-          {/* Description */}
-          <div>
-            <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500 mb-2">Description</p>
-            <p className="text-sm text-neutral-700 leading-relaxed bg-neutral-50 border border-neutral-200 rounded-xl p-4">
-              {project.desc}
-            </p>
-          </div>
+          {project.description && (
+            <div>
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500 mb-2">Description</p>
+              <p className="text-sm text-neutral-700 leading-relaxed bg-neutral-50 border border-neutral-200 rounded-xl p-4">
+                {project.description}
+              </p>
+            </div>
+          )}
 
-          {/* Status update */}
           <div>
             <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500 mb-2">Update Status</p>
             <div className="flex flex-wrap gap-2">
               {(["In Progress", "Under Review", "Completed", "On Hold"] as ProjectStatus[]).map((s) => (
                 <button
                   key={s}
-                  className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all
+                  disabled={busy}
+                  onClick={() => changeStatus(s)}
+                  className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all disabled:opacity-50
                     ${project.status === s
                       ? "bg-neutral-900 text-white border-neutral-900"
                       : "border-neutral-200 text-neutral-600 hover:border-neutral-400"}`}

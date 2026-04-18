@@ -1,13 +1,38 @@
 "use client";
 
+import { useState } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { markReferrerPaid } from "@/store/slices/referrals.slice";
 import { Referrer, PAYOUT_COLORS } from "@/lib/referrals.types";
+import { gooeyToast } from "goey-toast";
 
 interface ReferralDrawerProps {
   referrer: Referrer;
   onClose:  () => void;
+  onPaid:   (updated: Referrer) => void;
 }
 
-export default function ReferralDrawer({ referrer, onClose }: ReferralDrawerProps) {
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
+}
+
+export default function ReferralDrawer({ referrer, onClose, onPaid }: ReferralDrawerProps) {
+  const dispatch    = useAppDispatch();
+  const [busy, setBusy] = useState(false);
+
+  const handleMarkPaid = async () => {
+    if (busy) return;
+    setBusy(true);
+    const result = await dispatch(markReferrerPaid(referrer.id));
+    setBusy(false);
+    if (markReferrerPaid.fulfilled.match(result)) {
+      gooeyToast.success("Payout marked as paid", { description: `${referrer.name}'s payout has been recorded.` });
+      onPaid({ ...referrer, payout_status: "Paid" });
+    } else {
+      gooeyToast.error("Failed", { description: "Could not update payout status." });
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
@@ -46,10 +71,10 @@ export default function ReferralDrawer({ referrer, onClose }: ReferralDrawerProp
           {/* Stats grid */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Clicks",      value: referrer.clicks      },
-              { label: "Leads",       value: referrer.leads       },
-              { label: "Conversions", value: referrer.conversions },
-              { label: "Joined",      value: referrer.joined      },
+              { label: "Clicks",      value: referrer.clicks                   },
+              { label: "Leads",       value: referrer.leads                    },
+              { label: "Conversions", value: referrer.conversions              },
+              { label: "Joined",      value: formatDate(referrer.created_at)   },
             ].map((d) => (
               <div key={d.label} className="bg-neutral-50 border border-neutral-200 rounded-xl p-3">
                 <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">{d.label}</p>
@@ -62,21 +87,25 @@ export default function ReferralDrawer({ referrer, onClose }: ReferralDrawerProp
           <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">Total Earned</p>
-              <p className={`text-2xl font-black tracking-tight ${referrer.earned === 0 ? "text-neutral-300" : "text-neutral-900"}`}>
-                {referrer.earned === 0 ? "—" : `₦${referrer.earned.toLocaleString()}`}
+              <p className={`text-2xl font-black tracking-tight ${Number(referrer.earned) === 0 ? "text-neutral-300" : "text-neutral-900"}`}>
+                {Number(referrer.earned) === 0 ? "—" : `₦${Number(referrer.earned).toLocaleString()}`}
               </p>
             </div>
-            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${PAYOUT_COLORS[referrer.payoutStatus]}`}>
-              {referrer.payoutStatus}
+            <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${PAYOUT_COLORS[referrer.payout_status]}`}>
+              {referrer.payout_status === "None" ? "—" : referrer.payout_status}
             </span>
           </div>
         </div>
 
         {/* Footer */}
         <div className="p-6 border-t border-neutral-200 shrink-0 flex gap-3">
-          {referrer.payoutStatus === "Pending" && (
-            <button className="flex-1 bg-neutral-900 text-white text-sm font-bold py-3 rounded-xl hover:bg-neutral-700 transition-colors">
-              Mark as Paid
+          {referrer.payout_status === "Pending" && (
+            <button
+              onClick={handleMarkPaid}
+              disabled={busy}
+              className="flex-1 bg-neutral-900 text-white text-sm font-bold py-3 rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-50"
+            >
+              {busy ? "Updating…" : "Mark as Paid"}
             </button>
           )}
           <button
