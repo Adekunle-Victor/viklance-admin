@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { Referrer } from "@/lib/referrals.types";
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+import { authFetch } from "@/lib/api";
 
 interface ReferralsState {
   items:   Referrer[];
@@ -11,15 +10,10 @@ interface ReferralsState {
 
 const initialState: ReferralsState = { items: [], loading: false, error: null };
 
-const authHeader = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-});
-
 export const fetchReferrers = createAsyncThunk(
   "referrals/fetchAll",
   async (_, { rejectWithValue }) => {
-    const res  = await fetch(`${API}/api/referrals`, { headers: authHeader() });
+    const res  = await authFetch("/api/referrals");
     const data = await res.json();
     if (!res.ok) return rejectWithValue(data.error);
     return data as Referrer[];
@@ -29,10 +23,7 @@ export const fetchReferrers = createAsyncThunk(
 export const markReferrerPaid = createAsyncThunk(
   "referrals/markPaid",
   async (id: number, { rejectWithValue }) => {
-    const res  = await fetch(`${API}/api/referrals/${id}/paid`, {
-      method:  "PATCH",
-      headers: authHeader(),
-    });
+    const res  = await authFetch(`/api/referrals/${id}/paid`, { method: "PATCH" });
     const data = await res.json();
     if (!res.ok) return rejectWithValue(data.error);
     return data as Referrer;

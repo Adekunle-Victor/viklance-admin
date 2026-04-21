@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { Project } from "@/lib/projects.types";
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+import { authFetch } from "@/lib/api";
 
 interface ProjectsState {
   items:   Project[];
@@ -11,15 +10,10 @@ interface ProjectsState {
 
 const initialState: ProjectsState = { items: [], loading: false, error: null };
 
-const authHeader = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-});
-
 export const fetchProjects = createAsyncThunk(
   "projects/fetchAll",
   async (_, { rejectWithValue }) => {
-    const res  = await fetch(`${API}/api/projects`, { headers: authHeader() });
+    const res  = await authFetch("/api/projects");
     const data = await res.json();
     if (!res.ok) return rejectWithValue(data.error);
     return data;
@@ -29,10 +23,9 @@ export const fetchProjects = createAsyncThunk(
 export const updateProjectStatus = createAsyncThunk(
   "projects/updateStatus",
   async ({ id, status }: { id: string; status: string }, { rejectWithValue }) => {
-    const res  = await fetch(`${API}/api/projects/${id}/status`, {
-      method:  "PATCH",
-      headers: authHeader(),
-      body:    JSON.stringify({ status }),
+    const res  = await authFetch(`/api/projects/${id}/status`, {
+      method: "PATCH",
+      body:   JSON.stringify({ status }),
     });
     const data = await res.json();
     if (!res.ok) return rejectWithValue(data.error);

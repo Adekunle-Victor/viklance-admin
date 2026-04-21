@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { Payout } from "@/lib/payouts.types";
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+import { authFetch } from "@/lib/api";
 
 interface PayoutsState {
   items:   Payout[];
@@ -11,16 +10,11 @@ interface PayoutsState {
 
 const initialState: PayoutsState = { items: [], loading: false, error: null };
 
-const authHeader = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-});
-
 export const fetchPayouts = createAsyncThunk(
   "payouts/fetchAll",
   async (status: string | undefined = undefined, { rejectWithValue }) => {
     const query = status ? `?status=${status}` : "";
-    const res   = await fetch(`${API}/api/payouts${query}`, { headers: authHeader() });
+    const res   = await authFetch(`/api/payouts${query}`);
     const data  = await res.json();
     if (!res.ok) return rejectWithValue(data.error);
     return data;
@@ -30,10 +24,9 @@ export const fetchPayouts = createAsyncThunk(
 export const updatePayoutStatus = createAsyncThunk(
   "payouts/updateStatus",
   async ({ id, status }: { id: string; status: string }, { rejectWithValue }) => {
-    const res  = await fetch(`${API}/api/payouts/${id}/status`, {
-      method:  "PATCH",
-      headers: authHeader(),
-      body:    JSON.stringify({ status }),
+    const res  = await authFetch(`/api/payouts/${id}/status`, {
+      method: "PATCH",
+      body:   JSON.stringify({ status }),
     });
     const data = await res.json();
     if (!res.ok) return rejectWithValue(data.error);

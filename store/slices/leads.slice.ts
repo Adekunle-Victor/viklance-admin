@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { Lead } from "@/lib/leads.types";
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+import { authFetch } from "@/lib/api";
 
 interface LeadsState {
   items:   Lead[];
@@ -11,16 +10,11 @@ interface LeadsState {
 
 const initialState: LeadsState = { items: [], loading: false, error: null };
 
-const authHeader = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-});
-
 export const fetchLeads = createAsyncThunk(
   "leads/fetchAll",
   async (params: { status?: string; search?: string } = {}, { rejectWithValue }) => {
     const query = new URLSearchParams(params as Record<string, string>).toString();
-    const res   = await fetch(`${API}/api/leads${query ? `?${query}` : ""}`, { headers: authHeader() });
+    const res   = await authFetch(`/api/leads${query ? `?${query}` : ""}`);
     const data  = await res.json();
     if (!res.ok) return rejectWithValue(data.error);
     return data;
@@ -30,10 +24,9 @@ export const fetchLeads = createAsyncThunk(
 export const updateLeadStatus = createAsyncThunk(
   "leads/updateStatus",
   async ({ id, status }: { id: string; status: string }, { rejectWithValue }) => {
-    const res  = await fetch(`${API}/api/leads/${id}/status`, {
-      method:  "PATCH",
-      headers: authHeader(),
-      body:    JSON.stringify({ status }),
+    const res  = await authFetch(`/api/leads/${id}/status`, {
+      method: "PATCH",
+      body:   JSON.stringify({ status }),
     });
     const data = await res.json();
     if (!res.ok) return rejectWithValue(data.error);

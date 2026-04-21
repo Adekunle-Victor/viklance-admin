@@ -3,12 +3,14 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 interface AuthUser {
-  id:    string;
-  email: string;
+  id:            string;
+  email:         string;
+  user_metadata: { role?: "super_admin" | "staff"; full_name?: string; name?: string; [key: string]: unknown };
 }
 
 interface AuthState {
   user:         AuthUser | null;
+  role:         "super_admin" | "staff" | null;
   accessToken:  string | null;
   refreshToken: string | null;
   loading:      boolean;
@@ -17,6 +19,7 @@ interface AuthState {
 
 const initialState: AuthState = {
   user:         null,
+  role:         typeof window !== "undefined" ? (localStorage.getItem("role") as AuthState["role"]) : null,
   accessToken:  typeof window !== "undefined" ? localStorage.getItem("access_token") : null,
   refreshToken: typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null,
   loading:      false,
@@ -76,10 +79,12 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action: PayloadAction<any>) => {
         state.loading      = false;
         state.user         = action.payload.user;
+        state.role         = action.payload.user?.user_metadata?.role ?? null;
         state.accessToken  = action.payload.access_token;
         state.refreshToken = action.payload.refresh_token;
         localStorage.setItem("access_token",  action.payload.access_token);
         localStorage.setItem("refresh_token", action.payload.refresh_token);
+        if (state.role) localStorage.setItem("role", state.role);
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -87,19 +92,25 @@ const authSlice = createSlice({
       })
       .addCase(logout.fulfilled, (state) => {
         state.user         = null;
+        state.role         = null;
         state.accessToken  = null;
         state.refreshToken = null;
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
+        localStorage.removeItem("role");
       })
       .addCase(fetchMe.fulfilled, (state, action) => {
         state.user = action.payload;
+        state.role = action.payload?.user_metadata?.role ?? null;
+        if (state.role) localStorage.setItem("role", state.role);
       })
       .addCase(fetchMe.rejected, (state) => {
         state.user        = null;
+        state.role        = null;
         state.accessToken = null;
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
+        localStorage.removeItem("role");
       });
   },
 });

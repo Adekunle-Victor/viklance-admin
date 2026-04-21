@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/auth.slice";
 import { gooeyToast } from "goey-toast";
 
-const nav = [
+const adminNav = [
   {
     label: "Overview",
     href: "/dashboard",
@@ -26,6 +26,17 @@ const nav = [
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path d="M2 13.5c0-2.485 2.686-4.5 6-4.5s6 2.015 6 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
         <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.3" />
+      </svg>
+    ),
+  },
+  {
+    label: "Prospects",
+    href: "/dashboard/prospects",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="6" r="3" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M2 14c0-2.21 2.686-4 6-4s6 1.79 6 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M12.5 2.5l1 1-3 3-1.5-.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -71,6 +82,20 @@ const nav = [
   },
 ];
 
+const staffNav = [
+  {
+    label: "Prospects",
+    href: "/dashboard/prospects",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="6" r="3" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M2 14c0-2.21 2.686-4 6-4s6 1.79 6 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M12.5 2.5l1 1-3 3-1.5-.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+];
+
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
@@ -80,6 +105,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname  = usePathname();
   const router    = useRouter();
   const dispatch  = useAppDispatch();
+  const role      = useAppSelector((s) => s.auth.role);
+  const isAdmin   = role === "super_admin";
+  const nav       = isAdmin ? adminNav : staffNav;
   const [confirm, setConfirm] = useState(false);
 
   const navigate = (href: string) => {
@@ -128,12 +156,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <div className="h-16 flex items-center px-6 border-b border-neutral-200 shrink-0">
           <span className="text-sm font-black tracking-widest uppercase text-neutral-900">Viklance</span>
           <span className="ml-2 text-[10px] font-semibold tracking-widest uppercase text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">
-            Admin
+            {role === "super_admin" ? "Admin" : "Staff"}
           </span>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-4  space-y-3 px-3 flex flex-col gap-0.5 overflow-y-auto">
+        <nav className="flex-1 py-4 px-3 flex flex-col gap-3 overflow-y-auto">
           {nav.map((item) => {
             const active = pathname === item.href;
             return (
