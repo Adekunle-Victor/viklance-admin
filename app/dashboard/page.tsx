@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchLeads } from "@/store/slices/leads.slice";
 import { fetchReferrers } from "@/store/slices/referrals.slice";
 import { STATUS_COLORS } from "@/lib/leads.types";
+import StaffDashboard from "@/components/StaffDashboard.component";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short" });
@@ -15,25 +16,40 @@ export default function DashboardPage() {
   const dispatch = useAppDispatch();
   const router   = useRouter();
 
+  const role     = useAppSelector((s) => s.auth.role);
+  const [mounted, setMounted] = useState(false);
+
   const { items: leads,     loading: leadsLoading }     = useAppSelector((s) => s.leads);
   const { items: referrers, loading: referrersLoading } = useAppSelector((s) => s.referrals);
 
   useEffect(() => {
-    dispatch(fetchLeads({}));
-    dispatch(fetchReferrers());
-  }, [dispatch]);
+    setMounted(true);
+  }, []);
 
-  const totalLeads     = leads.length;
+  useEffect(() => {
+    if (!mounted) return;
+    if (role !== "staff") {
+      dispatch(fetchLeads({}));
+      dispatch(fetchReferrers());
+    }
+  }, [dispatch, role, mounted]);
+
+  if (!mounted) return null;
+  if (role === "staff") return <StaffDashboard />;
+
+  const totalLeads      = leads.length;
+  const demoReadyLeads  = leads.filter((l) => l.demo_ready).length;
   const referralSignups = referrers.length;
-  const pendingPayouts = referrers
+  const pendingPayouts  = referrers
     .filter((r) => r.payout_status === "Pending")
     .reduce((a, r) => a + Number(r.earned), 0);
-  const pendingCount   = referrers.filter((r) => r.payout_status === "Pending").length;
+  const pendingCount    = referrers.filter((r) => r.payout_status === "Pending").length;
 
   const stats = [
-    { label: "Total Leads",      value: leadsLoading     ? "—" : totalLeads.toString(),      up: true,  delta: `${leads.filter((l) => l.status === "New").length} new`                                     },
-    { label: "Referral Signups", value: referrersLoading ? "—" : referralSignups.toString(),  up: true,  delta: `${referrers.filter((r) => r.conversions > 0).length} converted`                            },
-    { label: "Pending Payouts",  value: referrersLoading ? "—" : `₦${pendingPayouts.toLocaleString()}`, up: false, delta: `${pendingCount} requests`                                                         },
+    { label: "Total Leads",      value: leadsLoading     ? "—" : totalLeads.toString(),               up: true,  delta: `${leads.filter((l) => l.status === "New").length} new`           },
+    { label: "Demo Ready",       value: leadsLoading     ? "—" : demoReadyLeads.toString(),            up: true,  delta: `${leads.filter((l) => l.demo_ready && l.demo_url).length} with link` },
+    { label: "Referral Signups", value: referrersLoading ? "—" : referralSignups.toString(),           up: true,  delta: `${referrers.filter((r) => r.conversions > 0).length} converted`  },
+    { label: "Pending Payouts",  value: referrersLoading ? "—" : `₦${pendingPayouts.toLocaleString()}`, up: false, delta: `${pendingCount} requests`                                        },
     { label: "Conversions",      value: referrersLoading ? "—" : referrers.reduce((a, r) => a + Number(r.conversions), 0).toString(), up: true, delta: "closed leads"                                       },
   ];
 
@@ -50,7 +66,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="bg-white border border-neutral-200 rounded-2xl p-6">
             <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500 mb-3">{s.label}</p>

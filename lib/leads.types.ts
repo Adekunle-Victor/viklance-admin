@@ -1,16 +1,18 @@
 export type LeadStatus = "New" | "In Review" | "Replied" | "Closed";
 
 export interface Lead {
-  id:         number;
-  name:       string;
-  email:      string;
-  company:    string | null;
-  service:    string;
-  budget:     string | null;
-  message:    string;
-  ref_code:   string | null;
-  status:     LeadStatus;
-  created_at: string;
+  id:          number;
+  name:        string;
+  email:       string;
+  company:     string | null;
+  service:     string;
+  budget:      string | null;
+  message:     string;
+  ref_code:    string | null;
+  status:      LeadStatus;
+  demo_ready:  boolean;
+  demo_url:    string | null;
+  created_at:  string;
 }
 
 export const STATUS_COLORS: Record<LeadStatus, string> = {

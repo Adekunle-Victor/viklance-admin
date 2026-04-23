@@ -21,6 +21,19 @@ export const fetchLeads = createAsyncThunk(
   }
 );
 
+export const markDemoReady = createAsyncThunk(
+  "leads/markDemoReady",
+  async ({ id, demo_url }: { id: string; demo_url: string }, { rejectWithValue }) => {
+    const res  = await authFetch(`/api/leads/${id}/demo`, {
+      method: "PATCH",
+      body:   JSON.stringify({ demo_url }),
+    });
+    const data = await res.json();
+    if (!res.ok) return rejectWithValue(data.error);
+    return data as Lead;
+  }
+);
+
 export const updateLeadStatus = createAsyncThunk(
   "leads/updateStatus",
   async ({ id, status }: { id: string; status: string }, { rejectWithValue }) => {
@@ -50,6 +63,10 @@ const leadsSlice = createSlice({
         state.error   = action.payload as string;
       })
       .addCase(updateLeadStatus.fulfilled, (state, action: PayloadAction<Lead>) => {
+        const idx = state.items.findIndex((l) => l.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
+      })
+      .addCase(markDemoReady.fulfilled, (state, action: PayloadAction<Lead>) => {
         const idx = state.items.findIndex((l) => l.id === action.payload.id);
         if (idx !== -1) state.items[idx] = action.payload;
       });

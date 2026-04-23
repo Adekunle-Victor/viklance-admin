@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAppDispatch } from "@/store/hooks";
-import { updateProspectStatus, updateProspectNotes } from "@/store/slices/prospects.slice";
+import { updateProspectStatus, updateProspectNotes, markProspectDemoReady } from "@/store/slices/prospects.slice";
 import { Prospect, ProspectStatus, PROSPECT_STATUSES, STATUS_COLORS } from "@/lib/prospects.types";
 import { gooeyToast } from "goey-toast";
 
@@ -19,9 +19,24 @@ function formatDate(iso: string) {
 
 export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }: ProspectDrawerProps) {
   const dispatch = useAppDispatch();
-  const [busy, setBusy]       = useState(false);
-  const [editNotes, setEditNotes] = useState(false);
-  const [notes, setNotes]     = useState(prospect.notes ?? "");
+  const [busy,        setBusy]        = useState(false);
+  const [editNotes,   setEditNotes]   = useState(false);
+  const [notes,       setNotes]       = useState(prospect.notes ?? "");
+  const [demoUrl,     setDemoUrl]     = useState(prospect.demo_url ?? "");
+  const [demoSaving,  setDemoSaving]  = useState(false);
+
+  const saveDemoReady = async () => {
+    if (!demoUrl.trim() || demoSaving) return;
+    setDemoSaving(true);
+    const result = await dispatch(markProspectDemoReady({ id: prospect.id, demo_url: demoUrl.trim() }));
+    setDemoSaving(false);
+    if (markProspectDemoReady.fulfilled.match(result)) {
+      gooeyToast.success("Demo marked as ready", { description: `${prospect.assigned_name} has been notified.` });
+      onUpdated(result.payload as Prospect);
+    } else {
+      gooeyToast.error("Failed", { description: "Could not mark demo as ready." });
+    }
+  };
 
   const changeStatus = async (status: ProspectStatus) => {
     if (status === prospect.status || busy) return;
@@ -148,6 +163,58 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
               </p>
             )}
           </div>
+
+          {/* Demo section — admin only */}
+          {isAdmin && (
+            <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500">Demo</p>
+                {prospect.demo_ready && (
+                  <span className="text-[10px] font-bold tracking-widest uppercase text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
+                    Ready
+                  </span>
+                )}
+              </div>
+
+              <input
+                type="url"
+                value={demoUrl}
+                onChange={(e) => setDemoUrl(e.target.value)}
+                placeholder="https://demo.viklance.dev/..."
+                className="border border-neutral-200 bg-white rounded-xl px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-500 transition-colors"
+              />
+
+              <button
+                onClick={saveDemoReady}
+                disabled={demoSaving || !demoUrl.trim()}
+                className="flex items-center justify-center gap-2 bg-neutral-900 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-40"
+              >
+                {demoSaving ? (
+                  <>
+                    <svg className="animate-spin" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="8" strokeLinecap="round" />
+                    </svg>
+                    Saving…
+                  </>
+                ) : prospect.demo_ready ? (
+                  "Update Demo Link"
+                ) : (
+                  `Mark Ready & Notify ${prospect.assigned_name.split(" ")[0]}`
+                )}
+              </button>
+
+              {prospect.demo_ready && prospect.demo_url && (
+                <a
+                  href={prospect.demo_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-neutral-400 hover:text-neutral-700 transition-colors truncate"
+                >
+                  {prospect.demo_url}
+                </a>
+              )}
+            </div>
+          )}
 
           {/* Status update */}
           <div>
