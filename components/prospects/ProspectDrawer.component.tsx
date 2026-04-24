@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAppDispatch } from "@/store/hooks";
-import { updateProspectStatus, updateProspectNotes, markProspectDemoReady } from "@/store/slices/prospects.slice";
+import { updateProspect, updateProspectStatus, updateProspectNotes, markProspectDemoReady } from "@/store/slices/prospects.slice";
 import { Prospect, ProspectStatus, PROSPECT_STATUSES, STATUS_COLORS } from "@/lib/prospects.types";
 import { gooeyToast } from "goey-toast";
 
@@ -19,16 +19,44 @@ function formatDate(iso: string) {
 
 export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }: ProspectDrawerProps) {
   const dispatch = useAppDispatch();
-  const [busy,        setBusy]        = useState(false);
-  const [editNotes,   setEditNotes]   = useState(false);
-  const [notes,       setNotes]       = useState(prospect.notes ?? "");
-  const [demoUrl,     setDemoUrl]     = useState(prospect.demo_url ?? "");
-  const [demoSaving,  setDemoSaving]  = useState(false);
+  const [busy,         setBusy]        = useState(false);
+  const [editNotes,    setEditNotes]   = useState(false);
+  const [notes,        setNotes]       = useState(prospect.notes ?? "");
+  const [editDetails,  setEditDetails] = useState(false);
+  const [editName,     setEditName]    = useState(prospect.name);
+  const [editPhone,    setEditPhone]   = useState(prospect.phone ?? "");
+  const [editEmail,    setEditEmail]   = useState(prospect.email ?? "");
+  const [frontendDemoUrl, setFrontendDemoUrl] = useState(prospect.frontend_demo_url ?? "");
+  const [adminDemoUrl,    setAdminDemoUrl]    = useState(prospect.admin_demo_url ?? "");
+  const [demoSaving,      setDemoSaving]      = useState(false);
+
+  const saveDetails = async () => {
+    if (!editName.trim() || busy) return;
+    setBusy(true);
+    const result = await dispatch(updateProspect({
+      id:    prospect.id,
+      name:  editName.trim(),
+      phone: editPhone.trim() || undefined,
+      email: editEmail.trim() || undefined,
+    }));
+    setBusy(false);
+    if (updateProspect.fulfilled.match(result)) {
+      gooeyToast.success("Prospect updated");
+      setEditDetails(false);
+      onUpdated(result.payload as Prospect);
+    } else {
+      gooeyToast.error("Update failed", { description: result.payload as string });
+    }
+  };
 
   const saveDemoReady = async () => {
-    if (!demoUrl.trim() || demoSaving) return;
+    if ((!frontendDemoUrl.trim() && !adminDemoUrl.trim()) || demoSaving) return;
     setDemoSaving(true);
-    const result = await dispatch(markProspectDemoReady({ id: prospect.id, demo_url: demoUrl.trim() }));
+    const result = await dispatch(markProspectDemoReady({
+      id:               prospect.id,
+      frontend_demo_url: frontendDemoUrl.trim(),
+      admin_demo_url:    adminDemoUrl.trim(),
+    }));
     setDemoSaving(false);
     if (markProspectDemoReady.fulfilled.match(result)) {
       gooeyToast.success("Demo marked as ready", { description: `${prospect.assigned_name} has been notified.` });
@@ -103,20 +131,88 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
             </span>
           </div>
 
-          {/* Details grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Email",   value: prospect.email ?? "—"         },
-              { label: "Phone",   value: prospect.phone ?? "—"         },
-              { label: "Added",   value: formatDate(prospect.created_at) },
-              { label: "Updated", value: formatDate(prospect.updated_at) },
-              ...(isAdmin ? [{ label: "Rep", value: prospect.assigned_name }] : []),
-            ].map((d) => (
-              <div key={d.label} className="bg-neutral-50 border border-neutral-200 rounded-xl p-3">
-                <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">{d.label}</p>
-                <p className="text-sm font-semibold text-neutral-900">{d.value}</p>
+          {/* Details */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500">Details</p>
+              {!editDetails && (
+                <button
+                  onClick={() => setEditDetails(true)}
+                  className="text-[11px] font-semibold text-neutral-400 hover:text-neutral-900 transition-colors"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+
+            {editDetails ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400">Name</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="border border-neutral-300 rounded-xl px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-neutral-600 transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400">Phone</label>
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="—"
+                    className="border border-neutral-300 rounded-xl px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-600 transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400">Email</label>
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="—"
+                    className="border border-neutral-300 rounded-xl px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-600 transition-colors"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    disabled={busy || !editName.trim()}
+                    onClick={saveDetails}
+                    className="flex-1 bg-neutral-900 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-50"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditDetails(false);
+                      setEditName(prospect.name);
+                      setEditPhone(prospect.phone ?? "");
+                      setEditEmail(prospect.email ?? "");
+                    }}
+                    className="flex-1 border border-neutral-200 text-neutral-700 text-sm font-semibold py-2.5 rounded-xl hover:border-neutral-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-            ))}
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Email",   value: prospect.email ?? "—"           },
+                  { label: "Phone",   value: prospect.phone ?? "—"           },
+                  { label: "Added",   value: formatDate(prospect.created_at) },
+                  { label: "Updated", value: formatDate(prospect.updated_at) },
+                  ...(isAdmin ? [{ label: "Rep", value: prospect.assigned_name }] : []),
+                ].map((d) => (
+                  <div key={d.label} className="bg-neutral-50 border border-neutral-200 rounded-xl p-3">
+                    <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">{d.label}</p>
+                    <p className="text-sm font-semibold text-neutral-900">{d.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Notes */}
@@ -164,8 +260,8 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
             )}
           </div>
 
-          {/* Demo section — admin only */}
-          {isAdmin && (
+          {/* Demo section */}
+          {(isAdmin || prospect.demo_ready) && (
             <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500">Demo</p>
@@ -176,42 +272,81 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
                 )}
               </div>
 
-              <input
-                type="url"
-                value={demoUrl}
-                onChange={(e) => setDemoUrl(e.target.value)}
-                placeholder="https://demo.viklance.dev/..."
-                className="border border-neutral-200 bg-white rounded-xl px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-500 transition-colors"
-              />
+              {/* Staff: read-only demo links */}
+              {!isAdmin && prospect.demo_ready && (
+                <div className="flex flex-col gap-2">
+                  {prospect.frontend_demo_url && (
+                    <div>
+                      <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">Frontend</p>
+                      <a
+                        href={prospect.frontend_demo_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-neutral-900 hover:underline break-all"
+                      >
+                        {prospect.frontend_demo_url}
+                      </a>
+                    </div>
+                  )}
+                  {prospect.admin_demo_url && (
+                    <div>
+                      <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">Admin</p>
+                      <a
+                        href={prospect.admin_demo_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-neutral-900 hover:underline break-all"
+                      >
+                        {prospect.admin_demo_url}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <button
-                onClick={saveDemoReady}
-                disabled={demoSaving || !demoUrl.trim()}
-                className="flex items-center justify-center gap-2 bg-neutral-900 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-40"
-              >
-                {demoSaving ? (
-                  <>
-                    <svg className="animate-spin" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="8" strokeLinecap="round" />
-                    </svg>
-                    Saving…
-                  </>
-                ) : prospect.demo_ready ? (
-                  "Update Demo Link"
-                ) : (
-                  `Mark Ready & Notify ${prospect.assigned_name.split(" ")[0]}`
-                )}
-              </button>
+              {/* Admin: editable demo controls */}
+              {isAdmin && (
+                <>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400">Frontend Demo URL</label>
+                    <input
+                      type="url"
+                      value={frontendDemoUrl}
+                      onChange={(e) => setFrontendDemoUrl(e.target.value)}
+                      placeholder="https://demo.viklance.dev/..."
+                      className="border border-neutral-200 bg-white rounded-xl px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-500 transition-colors"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400">Admin Demo URL</label>
+                    <input
+                      type="url"
+                      value={adminDemoUrl}
+                      onChange={(e) => setAdminDemoUrl(e.target.value)}
+                      placeholder="https://admin.viklance.dev/..."
+                      className="border border-neutral-200 bg-white rounded-xl px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-500 transition-colors"
+                    />
+                  </div>
 
-              {prospect.demo_ready && prospect.demo_url && (
-                <a
-                  href={prospect.demo_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-neutral-400 hover:text-neutral-700 transition-colors truncate"
-                >
-                  {prospect.demo_url}
-                </a>
+                  <button
+                    onClick={saveDemoReady}
+                    disabled={demoSaving || (!frontendDemoUrl.trim() && !adminDemoUrl.trim())}
+                    className="flex items-center justify-center gap-2 bg-neutral-900 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-40"
+                  >
+                    {demoSaving ? (
+                      <>
+                        <svg className="animate-spin" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="8" strokeLinecap="round" />
+                        </svg>
+                        Saving…
+                      </>
+                    ) : prospect.demo_ready ? (
+                      "Update Demo Links"
+                    ) : (
+                      `Mark Ready & Notify ${prospect.assigned_name.split(" ")[0]}`
+                    )}
+                  </button>
+                </>
               )}
             </div>
           )}

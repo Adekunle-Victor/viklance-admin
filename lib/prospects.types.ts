@@ -20,8 +20,9 @@ export interface Prospect {
   status:           ProspectStatus;
   assigned_to:      string;
   assigned_name:    string;
-  demo_ready:       boolean;
-  demo_url:         string | null;
+  demo_ready:        boolean;
+  frontend_demo_url: string | null;
+  admin_demo_url:    string | null;
   created_at:       string;
   updated_at:       string;
 }

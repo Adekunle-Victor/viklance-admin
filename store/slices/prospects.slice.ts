@@ -40,6 +40,21 @@ export const createProspect = createAsyncThunk(
   }
 );
 
+export const updateProspect = createAsyncThunk(
+  "prospects/update",
+  async (
+    { id, ...body }: { id: number; name?: string; phone?: string; email?: string },
+    { rejectWithValue }
+  ) => {
+    const res  = await authFetch(`/api/prospects/${id}`, {
+      method: "PATCH", body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) return rejectWithValue(data.error);
+    return data as Prospect;
+  }
+);
+
 export const updateProspectStatus = createAsyncThunk(
   "prospects/updateStatus",
   async ({ id, status }: { id: number; status: string }, { rejectWithValue }) => {
@@ -54,9 +69,12 @@ export const updateProspectStatus = createAsyncThunk(
 
 export const markProspectDemoReady = createAsyncThunk(
   "prospects/markDemoReady",
-  async ({ id, demo_url }: { id: number; demo_url: string }, { rejectWithValue }) => {
+  async (
+    { id, frontend_demo_url, admin_demo_url }: { id: number; frontend_demo_url: string; admin_demo_url: string },
+    { rejectWithValue }
+  ) => {
     const res  = await authFetch(`/api/prospects/${id}/demo`, {
-      method: "PATCH", body: JSON.stringify({ demo_url }),
+      method: "PATCH", body: JSON.stringify({ frontend_demo_url, admin_demo_url }),
     });
     const data = await res.json();
     if (!res.ok) return rejectWithValue(data.error);
@@ -98,6 +116,10 @@ const prospectsSlice = createSlice({
       })
       .addCase(createProspect.rejected,  (state, action) => {
         state.error = action.payload as string;
+      })
+      .addCase(updateProspect.fulfilled, (state, action: PayloadAction<Prospect>) => {
+        const idx = state.items.findIndex((p) => p.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
       })
       .addCase(updateProspectStatus.fulfilled, (state, action: PayloadAction<Prospect>) => {
         const idx = state.items.findIndex((p) => p.id === action.payload.id);
