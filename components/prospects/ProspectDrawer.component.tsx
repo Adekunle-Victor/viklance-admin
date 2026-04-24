@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppDispatch } from "@/store/hooks";
-import { updateProspect, updateProspectStatus, updateProspectNotes, markProspectDemoReady } from "@/store/slices/prospects.slice";
+import { fetchProspect, updateProspect, updateProspectStatus, updateProspectNotes, markProspectDemoReady } from "@/store/slices/prospects.slice";
 import { Prospect, ProspectStatus, PROSPECT_STATUSES, STATUS_COLORS } from "@/lib/prospects.types";
 import { gooeyToast } from "goey-toast";
 
@@ -29,6 +29,12 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
   const [frontendDemoUrl, setFrontendDemoUrl] = useState(prospect.frontend_demo_url ?? "");
   const [adminDemoUrl,    setAdminDemoUrl]    = useState(prospect.admin_demo_url ?? "");
   const [demoSaving,      setDemoSaving]      = useState(false);
+
+  useEffect(() => {
+    dispatch(fetchProspect(prospect.id)).then((result) => {
+      if (fetchProspect.fulfilled.match(result)) onUpdated(result.payload);
+    });
+  }, [prospect.id]);
 
   const saveDetails = async () => {
     if (!editName.trim() || busy) return;
@@ -200,15 +206,15 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Email",   value: prospect.email ?? "—"           },
-                  { label: "Phone",   value: prospect.phone ?? "—"           },
-                  { label: "Added",   value: formatDate(prospect.created_at) },
-                  { label: "Updated", value: formatDate(prospect.updated_at) },
-                  ...(isAdmin ? [{ label: "Rep", value: prospect.assigned_name }] : []),
+                  { label: "Email",   value: prospect.email ?? "—",           full: true  },
+                  { label: "Phone",   value: prospect.phone ?? "—",           full: false },
+                  { label: "Added",   value: formatDate(prospect.created_at), full: false },
+                  { label: "Updated", value: formatDate(prospect.updated_at), full: false },
+                  ...(isAdmin ? [{ label: "Rep", value: prospect.assigned_name, full: true }] : []),
                 ].map((d) => (
-                  <div key={d.label} className="bg-neutral-50 border border-neutral-200 rounded-xl p-3">
+                  <div key={d.label} className={`bg-neutral-50 border border-neutral-200 rounded-xl p-3 ${d.full ? "col-span-2" : ""}`}>
                     <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">{d.label}</p>
-                    <p className="text-sm font-semibold text-neutral-900">{d.value}</p>
+                    <p className="text-sm font-semibold text-neutral-900 break-all">{d.value}</p>
                   </div>
                 ))}
               </div>

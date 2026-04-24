@@ -10,6 +10,16 @@ interface ProspectsState {
 
 const initialState: ProspectsState = { items: [], loading: false, error: null };
 
+export const fetchProspect = createAsyncThunk(
+  "prospects/fetchOne",
+  async (id: number, { rejectWithValue }) => {
+    const res  = await authFetch(`/api/prospects/${id}`);
+    const data = await res.json();
+    if (!res.ok) return rejectWithValue(data.error);
+    return data as Prospect;
+  }
+);
+
 export const fetchProspects = createAsyncThunk(
   "prospects/fetchAll",
   async (
@@ -116,6 +126,10 @@ const prospectsSlice = createSlice({
       })
       .addCase(createProspect.rejected,  (state, action) => {
         state.error = action.payload as string;
+      })
+      .addCase(fetchProspect.fulfilled, (state, action: PayloadAction<Prospect>) => {
+        const idx = state.items.findIndex((p) => p.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
       })
       .addCase(updateProspect.fulfilled, (state, action: PayloadAction<Prospect>) => {
         const idx = state.items.findIndex((p) => p.id === action.payload.id);
