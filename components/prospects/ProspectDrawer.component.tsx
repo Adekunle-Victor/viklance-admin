@@ -30,6 +30,7 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
   const [adminDemoUrl,    setAdminDemoUrl]    = useState(prospect.admin_demo_url ?? "");
   const [demoSaving,      setDemoSaving]      = useState(false);
   const [statusOpen,      setStatusOpen]      = useState(false);
+  const [pendingStatus,   setPendingStatus]   = useState<ProspectStatus>(prospect.status);
   const statusRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -370,17 +371,15 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
           )}
 
           {/* Status update */}
-          <div>
-            <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500 mb-2">Update Status</p>
+          <div className="flex flex-col gap-2">
+            <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500">Update Status</p>
             <div ref={statusRef} className="relative">
               <button
                 disabled={busy}
                 onClick={() => setStatusOpen((o) => !o)}
                 className="w-full flex items-center justify-between gap-3 border border-neutral-300 bg-white rounded-xl px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-neutral-500 transition-colors disabled:opacity-50"
               >
-                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${STATUS_COLORS[prospect.status]}`}>
-                  {prospect.status}
-                </span>
+                <span>{pendingStatus}</span>
                 <svg
                   width="14" height="14" viewBox="0 0 14 14" fill="none"
                   className={`shrink-0 text-neutral-400 transition-transform ${statusOpen ? "rotate-180" : ""}`}
@@ -394,14 +393,12 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
                   {PROSPECT_STATUSES.map((s) => (
                     <button
                       key={s}
-                      onClick={() => { changeStatus(s); setStatusOpen(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-neutral-50 transition-colors ${prospect.status === s ? "bg-neutral-50" : ""}`}
+                      onClick={() => { setPendingStatus(s); setStatusOpen(false); }}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition-colors hover:bg-neutral-50 ${pendingStatus === s ? "font-semibold text-neutral-900 bg-neutral-50" : "font-medium text-neutral-600"}`}
                     >
-                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${STATUS_COLORS[s]}`}>
-                        {s}
-                      </span>
-                      {prospect.status === s && (
-                        <svg className="ml-auto shrink-0 text-neutral-400" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      {s}
+                      {pendingStatus === s && (
+                        <svg className="shrink-0 text-neutral-400" width="12" height="12" viewBox="0 0 12 12" fill="none">
                           <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       )}
@@ -410,6 +407,13 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
                 </div>
               )}
             </div>
+            <button
+              disabled={busy || pendingStatus === prospect.status}
+              onClick={() => changeStatus(pendingStatus)}
+              className="w-full bg-neutral-900 text-white text-sm font-bold py-3 rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-40"
+            >
+              Update Status
+            </button>
           </div>
         </div>
 
