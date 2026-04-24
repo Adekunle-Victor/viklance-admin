@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { fetchProspect, updateProspect, updateProspectStatus, updateProspectNotes, markProspectDemoReady } from "@/store/slices/prospects.slice";
 import { Prospect, ProspectStatus, PROSPECT_STATUSES, STATUS_COLORS } from "@/lib/prospects.types";
@@ -29,6 +29,18 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
   const [frontendDemoUrl, setFrontendDemoUrl] = useState(prospect.frontend_demo_url ?? "");
   const [adminDemoUrl,    setAdminDemoUrl]    = useState(prospect.admin_demo_url ?? "");
   const [demoSaving,      setDemoSaving]      = useState(false);
+  const [statusOpen,      setStatusOpen]      = useState(false);
+  const statusRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (statusRef.current && !statusRef.current.contains(e.target as Node)) {
+        setStatusOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     dispatch(fetchProspect(prospect.id)).then((result) => {
@@ -360,20 +372,43 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
           {/* Status update */}
           <div>
             <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500 mb-2">Update Status</p>
-            <div className="flex flex-wrap gap-2">
-              {PROSPECT_STATUSES.map((s) => (
-                <button
-                  key={s}
-                  disabled={busy}
-                  onClick={() => changeStatus(s)}
-                  className={`text-[11px] font-semibold px-3 py-1.5 rounded-full border transition-all disabled:opacity-50
-                    ${prospect.status === s
-                      ? "bg-neutral-900 text-white border-neutral-900"
-                      : "border-neutral-200 text-neutral-600 hover:border-neutral-400"}`}
+            <div ref={statusRef} className="relative">
+              <button
+                disabled={busy}
+                onClick={() => setStatusOpen((o) => !o)}
+                className="w-full flex items-center justify-between gap-3 border border-neutral-300 bg-white rounded-xl px-4 py-3 text-sm font-semibold text-neutral-900 hover:border-neutral-500 transition-colors disabled:opacity-50"
+              >
+                <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${STATUS_COLORS[prospect.status]}`}>
+                  {prospect.status}
+                </span>
+                <svg
+                  width="14" height="14" viewBox="0 0 14 14" fill="none"
+                  className={`shrink-0 text-neutral-400 transition-transform ${statusOpen ? "rotate-180" : ""}`}
                 >
-                  {s}
-                </button>
-              ))}
+                  <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {statusOpen && (
+                <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-10 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden">
+                  {PROSPECT_STATUSES.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => { changeStatus(s); setStatusOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-neutral-50 transition-colors ${prospect.status === s ? "bg-neutral-50" : ""}`}
+                    >
+                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border ${STATUS_COLORS[s]}`}>
+                        {s}
+                      </span>
+                      {prospect.status === s && (
+                        <svg className="ml-auto shrink-0 text-neutral-400" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
