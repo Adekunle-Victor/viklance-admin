@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAppDispatch } from "@/store/hooks";
-import { fetchProspect, updateProspect, updateProspectStatus, updateProspectNotes, markProspectDemoReady } from "@/store/slices/prospects.slice";
+import { fetchProspect, updateProspect, updateProspectStatus, updateProspectNotes, markProspectDemoReady, sendProspectEmail } from "@/store/slices/prospects.slice";
 import { Prospect, ProspectStatus, PROSPECT_STATUSES, STATUS_COLORS } from "@/lib/prospects.types";
 import { gooeyToast } from "goey-toast";
 
@@ -28,7 +28,12 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
   const [editEmail,    setEditEmail]   = useState(prospect.email ?? "");
   const [frontendDemoUrl, setFrontendDemoUrl] = useState(prospect.frontend_demo_url ?? "");
   const [adminDemoUrl,    setAdminDemoUrl]    = useState(prospect.admin_demo_url ?? "");
+  const [demoEmailCred,   setDemoEmailCred]   = useState(prospect.demo_email ?? "");
+  const [demoPasswordCred,setDemoPasswordCred]= useState(prospect.demo_password ?? "");
   const [demoSaving,      setDemoSaving]      = useState(false);
+  const [outreachType,    setOutreachType]    = useState<"demo" | "proposal" | "followup" | null>(null);
+  const [outreachMessage, setOutreachMessage] = useState("");
+  const [emailSending,    setEmailSending]    = useState(false);
   const [statusOpen,      setStatusOpen]      = useState(false);
   const [pendingStatus,   setPendingStatus]   = useState<ProspectStatus>(prospect.status);
   const statusRef = useRef<HTMLDivElement>(null);
@@ -68,13 +73,33 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
     }
   };
 
+  const sendEmail = async () => {
+    if (!outreachType || emailSending) return;
+    setEmailSending(true);
+    const result = await dispatch(sendProspectEmail({
+      id:      prospect.id,
+      type:    outreachType,
+      message: outreachMessage.trim() || undefined,
+    }));
+    setEmailSending(false);
+    if (sendProspectEmail.fulfilled.match(result)) {
+      gooeyToast.success("Email sent", { description: `${outreachType === "demo" ? "Demo" : outreachType === "proposal" ? "Proposal" : "Follow-up"} email sent to ${prospect.email}` });
+      setOutreachType(null);
+      setOutreachMessage("");
+    } else {
+      gooeyToast.error("Failed to send", { description: result.payload as string });
+    }
+  };
+
   const saveDemoReady = async () => {
     if ((!frontendDemoUrl.trim() && !adminDemoUrl.trim()) || demoSaving) return;
     setDemoSaving(true);
     const result = await dispatch(markProspectDemoReady({
-      id:               prospect.id,
+      id:                prospect.id,
       frontend_demo_url: frontendDemoUrl.trim(),
       admin_demo_url:    adminDemoUrl.trim(),
+      demo_email:        demoEmailCred.trim() || undefined,
+      demo_password:     demoPasswordCred.trim() || undefined,
     }));
     setDemoSaving(false);
     if (markProspectDemoReady.fulfilled.match(result)) {
@@ -346,6 +371,28 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
                       className="border border-neutral-200 bg-white rounded-xl px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-500 transition-colors"
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400">Demo Login Email</label>
+                      <input
+                        type="email"
+                        value={demoEmailCred}
+                        onChange={(e) => setDemoEmailCred(e.target.value)}
+                        placeholder="demo@example.com"
+                        className="border border-neutral-200 bg-white rounded-xl px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-500 transition-colors"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400">Demo Password</label>
+                      <input
+                        type="text"
+                        value={demoPasswordCred}
+                        onChange={(e) => setDemoPasswordCred(e.target.value)}
+                        placeholder="••••••••"
+                        className="border border-neutral-200 bg-white rounded-xl px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-neutral-500 transition-colors"
+                      />
+                    </div>
+                  </div>
 
                   <button
                     onClick={saveDemoReady}
@@ -366,6 +413,87 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
                     )}
                   </button>
                 </>
+              )}
+            </div>
+          )}
+
+          {/* Outreach — super admin only */}
+          {isAdmin && (
+            <div className="flex flex-col gap-3">
+              <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500">Outreach</p>
+
+              {!prospect.email && (
+                <p className="text-xs text-neutral-400 bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3">
+                  No email address on file — add one in Details to enable outreach.
+                </p>
+              )}
+
+              <div className="grid grid-cols-3 gap-2">
+                {(["demo", "proposal", "followup"] as const).map((t) => {
+                  const labels = { demo: "Demo Email", proposal: "Proposal", followup: "Follow Up" };
+                  const active = outreachType === t;
+                  return (
+                    <button
+                      key={t}
+                      disabled={!prospect.email}
+                      onClick={() => { setOutreachType(active ? null : t); setOutreachMessage(""); }}
+                      className={`text-[11px] font-bold py-2.5 rounded-xl border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                        active
+                          ? "bg-neutral-900 text-white border-neutral-900"
+                          : "border-neutral-200 text-neutral-700 hover:border-neutral-400 bg-white"
+                      }`}
+                    >
+                      {labels[t]}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {outreachType && (
+                <div className="border border-neutral-200 rounded-xl p-4 flex flex-col gap-3 bg-neutral-50">
+                  <div>
+                    <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">Template preview</p>
+                    <p className="text-xs text-neutral-600 leading-relaxed">
+                      {outreachType === "demo" && <>Hi {prospect.name}, we built you a working demo — no commitment required. Includes your demo links and login credentials.</>}
+                      {outreachType === "proposal" && <>Hi {prospect.name}, we've put together a proposal for a full engagement. Your note will be included below the intro copy.</>}
+                      {outreachType === "followup" && <>Hi {prospect.name}, just following up to see if you had a chance to explore the demo. Your note will be included.</>}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400">
+                      Add a personal note <span className="normal-case font-normal">(optional)</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={outreachMessage}
+                      onChange={(e) => setOutreachMessage(e.target.value)}
+                      placeholder="Add any extra context or a personal message..."
+                      className="w-full border border-neutral-300 bg-white rounded-xl px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-neutral-600 transition-colors resize-none placeholder:text-neutral-400"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={emailSending}
+                      onClick={sendEmail}
+                      className="flex-1 flex items-center justify-center gap-2 bg-neutral-900 text-white text-sm font-bold py-2.5 rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-50"
+                    >
+                      {emailSending ? (
+                        <>
+                          <svg className="animate-spin" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                            <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="8" strokeLinecap="round" />
+                          </svg>
+                          Sending…
+                        </>
+                      ) : "Send Email ↗"}
+                    </button>
+                    <button
+                      onClick={() => { setOutreachType(null); setOutreachMessage(""); }}
+                      className="flex-1 border border-neutral-200 text-neutral-700 text-sm font-semibold py-2.5 rounded-xl hover:border-neutral-400 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -419,14 +547,6 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
 
         {/* Footer */}
         <div className="p-6 border-t border-neutral-200 shrink-0 flex gap-3">
-          {prospect.email && (
-            <a
-              href={`mailto:${prospect.email}`}
-              className="flex-1 bg-neutral-900 text-white text-sm font-bold py-3 rounded-xl text-center hover:bg-neutral-700 transition-colors"
-            >
-              Email
-            </a>
-          )}
           <a
             href={`https://instagram.com/${prospect.instagram_handle}`}
             target="_blank"

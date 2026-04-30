@@ -4,5 +4,5 @@ import { GooeyToaster } from "goey-toast";
 import "goey-toast/styles.css";
 
 export default function ToastProvider() {
-  return <GooeyToaster position="top-right" theme="light" closeButton />;
+  return <GooeyToaster position="top-center" theme="light" closeButton />;
 }

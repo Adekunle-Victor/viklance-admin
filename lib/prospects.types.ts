@@ -23,6 +23,8 @@ export interface Prospect {
   demo_ready:        boolean;
   frontend_demo_url: string | null;
   admin_demo_url:    string | null;
+  demo_email:        string | null;
+  demo_password:     string | null;
   created_at:       string;
   updated_at:       string;
 }

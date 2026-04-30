@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Prospect, STATUS_COLORS } from "@/lib/prospects.types";
 import Pagination from "@/components/Pagination.component";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 25;
 
 interface ProspectsTableProps {
   prospects: Prospect[];

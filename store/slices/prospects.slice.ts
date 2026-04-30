@@ -80,15 +80,33 @@ export const updateProspectStatus = createAsyncThunk(
 export const markProspectDemoReady = createAsyncThunk(
   "prospects/markDemoReady",
   async (
-    { id, frontend_demo_url, admin_demo_url }: { id: number; frontend_demo_url: string; admin_demo_url: string },
+    { id, frontend_demo_url, admin_demo_url, demo_email, demo_password }: {
+      id: number; frontend_demo_url: string; admin_demo_url: string;
+      demo_email?: string; demo_password?: string;
+    },
     { rejectWithValue }
   ) => {
     const res  = await authFetch(`/api/prospects/${id}/demo`, {
-      method: "PATCH", body: JSON.stringify({ frontend_demo_url, admin_demo_url }),
+      method: "PATCH", body: JSON.stringify({ frontend_demo_url, admin_demo_url, demo_email, demo_password }),
     });
     const data = await res.json();
     if (!res.ok) return rejectWithValue(data.error);
     return data as Prospect;
+  }
+);
+
+export const sendProspectEmail = createAsyncThunk(
+  "prospects/sendEmail",
+  async (
+    { id, type, message }: { id: number; type: "demo" | "proposal" | "followup"; message?: string },
+    { rejectWithValue }
+  ) => {
+    const res  = await authFetch(`/api/prospects/${id}/email`, {
+      method: "POST", body: JSON.stringify({ type, message }),
+    });
+    const data = await res.json();
+    if (!res.ok) return rejectWithValue(data.error);
+    return data as { success: boolean };
   }
 );
 
