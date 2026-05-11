@@ -454,9 +454,9 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
                   <div>
                     <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">Template preview</p>
                     <p className="text-xs text-neutral-600 leading-relaxed">
-                      {outreachType === "demo" && <>Hi {prospect.name}, we built you a working demo — no commitment required. Includes your demo links and login credentials.</>}
-                      {outreachType === "proposal" && <>Hi {prospect.name}, we've put together a proposal for a full engagement. Your note will be included below the intro copy.</>}
-                      {outreachType === "followup" && <>Hi {prospect.name}, just following up to see if you had a chance to explore the demo. Your note will be included.</>}
+                      {outreachType === "demo" && <>Introduces Viklance Orbit LTD as a registered software company, presents the web app built for {prospect.name}, walks them through the demo access card with URLs and login credentials, explains Paystack test mode, covers 4 key benefits, offers a personal guided tour, and asks for a reply either way since the app is live on our servers.</>}
+                      {outreachType === "proposal" && <>Thanks {prospect.name} for looking at the demo, presents the full project proposal covering scope, timeline and investment, highlights senior-level delivery, and asks for a reply to get contracts sorted.</>}
+                      {outreachType === "followup" && <>Checks in with {prospect.name}, reminds them the web app is still live on our servers, asks for a reply either way so we can decide whether to keep it up or take it down.</>}
                     </p>
                   </div>
                   <div className="flex flex-col gap-1">
