@@ -6,6 +6,7 @@ import projectsReducer      from "./slices/projects.slice";
 import payoutsReducer       from "./slices/payouts.slice";
 import prospectsReducer     from "./slices/prospects.slice";
 import notificationsReducer from "./slices/notifications.slice";
+import outreachReducer      from "./slices/outreach.slice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     payouts:       payoutsReducer,
     prospects:     prospectsReducer,
     notifications: notificationsReducer,
+    outreach:      outreachReducer,
   },
 });
 

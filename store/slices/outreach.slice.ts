@@ -1,0 +1,52 @@
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { authFetch } from "@/lib/api";
+
+interface OutreachState {
+  loading:       boolean;
+  error:         string | null;
+  lastSentCount: number | null;
+}
+
+const initialState: OutreachState = { loading: false, error: null, lastSentCount: null };
+
+export const bulkSend = createAsyncThunk(
+  "outreach/bulkSend",
+  async (
+    body: {
+      prospectIds:  number[];
+      type:         "demo" | "proposal" | "followup";
+      businessType: "ecommerce" | "dealership";
+      message?:     string;
+    },
+    { rejectWithValue }
+  ) => {
+    const res  = await authFetch("/api/outreach/bulk", { method: "POST", body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) return rejectWithValue(data.error);
+    return data as { sent: number };
+  }
+);
+
+const outreachSlice = createSlice({
+  name: "outreach",
+  initialState,
+  reducers: {
+    clearOutreachError: (state) => { state.error = null; },
+    clearSentCount:     (state) => { state.lastSentCount = null; },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(bulkSend.pending,   (state) => { state.loading = true; state.error = null; })
+      .addCase(bulkSend.fulfilled, (state, action: PayloadAction<{ sent: number }>) => {
+        state.loading       = false;
+        state.lastSentCount = action.payload.sent;
+      })
+      .addCase(bulkSend.rejected,  (state, action) => {
+        state.loading = false;
+        state.error   = action.payload as string;
+      });
+  },
+});
+
+export const { clearOutreachError, clearSentCount } = outreachSlice.actions;
+export default outreachSlice.reducer;

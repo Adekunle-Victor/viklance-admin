@@ -98,11 +98,16 @@ export const markProspectDemoReady = createAsyncThunk(
 export const sendProspectEmail = createAsyncThunk(
   "prospects/sendEmail",
   async (
-    { id, type, message }: { id: number; type: "demo" | "proposal" | "followup"; message?: string },
+    { id, type, businessType, message }: {
+      id: number;
+      type: "demo" | "proposal" | "followup";
+      businessType?: "ecommerce" | "dealership";
+      message?: string;
+    },
     { rejectWithValue }
   ) => {
     const res  = await authFetch(`/api/prospects/${id}/email`, {
-      method: "POST", body: JSON.stringify({ type, message }),
+      method: "POST", body: JSON.stringify({ type, businessType: businessType ?? "ecommerce", message }),
     });
     const data = await res.json();
     if (!res.ok) return rejectWithValue(data.error);

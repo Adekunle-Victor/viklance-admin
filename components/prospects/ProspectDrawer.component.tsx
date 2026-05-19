@@ -31,9 +31,10 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
   const [demoEmailCred,   setDemoEmailCred]   = useState(prospect.demo_email ?? "");
   const [demoPasswordCred,setDemoPasswordCred]= useState(prospect.demo_password ?? "");
   const [demoSaving,      setDemoSaving]      = useState(false);
-  const [outreachType,    setOutreachType]    = useState<"demo" | "proposal" | "followup" | null>(null);
-  const [outreachMessage, setOutreachMessage] = useState("");
-  const [emailSending,    setEmailSending]    = useState(false);
+  const [outreachType,     setOutreachType]    = useState<"demo" | "proposal" | "followup" | null>(null);
+  const [outreachMessage,  setOutreachMessage] = useState("");
+  const [businessType,     setBusinessType]    = useState<"ecommerce" | "dealership">("ecommerce");
+  const [emailSending,     setEmailSending]    = useState(false);
   const [statusOpen,      setStatusOpen]      = useState(false);
   const [pendingStatus,   setPendingStatus]   = useState<ProspectStatus>(prospect.status);
   const statusRef = useRef<HTMLDivElement>(null);
@@ -77,9 +78,10 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
     if (!outreachType || emailSending) return;
     setEmailSending(true);
     const result = await dispatch(sendProspectEmail({
-      id:      prospect.id,
-      type:    outreachType,
-      message: outreachMessage.trim() || undefined,
+      id:           prospect.id,
+      type:         outreachType,
+      businessType,
+      message:      outreachMessage.trim() || undefined,
     }));
     setEmailSending(false);
     if (sendProspectEmail.fulfilled.match(result)) {
@@ -428,6 +430,21 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
                 </p>
               )}
 
+              {/* Business type toggle */}
+              <div className="flex items-center gap-1 bg-neutral-100 border border-neutral-200 rounded-xl p-1 self-start">
+                {(["ecommerce", "dealership"] as const).map((bt) => (
+                  <button
+                    key={bt}
+                    onClick={() => setBusinessType(bt)}
+                    className={`text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all ${
+                      businessType === bt ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+                    }`}
+                  >
+                    {bt === "ecommerce" ? "E-Commerce" : "Car Dealership"}
+                  </button>
+                ))}
+              </div>
+
               <div className="grid grid-cols-3 gap-2">
                 {(["demo", "proposal", "followup"] as const).map((t) => {
                   const labels = { demo: "Demo Email", proposal: "Proposal", followup: "Follow Up" };
@@ -454,9 +471,11 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
                   <div>
                     <p className="text-[10px] font-semibold tracking-widest uppercase text-neutral-400 mb-1">Template preview</p>
                     <p className="text-xs text-neutral-600 leading-relaxed">
-                      {outreachType === "demo" && <>Introduces Viklance Orbit LTD as a registered software company, presents the web app built for {prospect.name}, walks them through the demo access card with URLs and login credentials, explains Paystack test mode, covers 4 key benefits, offers a personal guided tour, and asks for a reply either way since the app is live on our servers.</>}
+                      {outreachType === "demo" && businessType === "ecommerce" && <>Introduces Viklance Orbit LTD, presents the online store built for {prospect.name}, walks through demo access with URLs and login credentials, explains Paystack test mode, covers 4 key benefits, offers a guided tour, and asks for a reply since the app is live on our servers.</>}
+                      {outreachType === "demo" && businessType === "dealership" && <>Introduces Viklance Orbit LTD, presents the vehicle listing platform built for {prospect.name}'s dealership, walks through demo access with URLs and login credentials, explains how to browse inventory and manage stock, and asks for a reply since the platform is live on our servers.</>}
                       {outreachType === "proposal" && <>Thanks {prospect.name} for looking at the demo, presents the full project proposal covering scope, timeline and investment, highlights senior-level delivery, and asks for a reply to get contracts sorted.</>}
-                      {outreachType === "followup" && <>Checks in with {prospect.name}, reminds them the web app is still live on our servers, asks for a reply either way so we can decide whether to keep it up or take it down.</>}
+                      {outreachType === "followup" && businessType === "ecommerce" && <>Checks in with {prospect.name}, notes the first email may have landed in Promotions, reminds them the web app is still live on our servers, and asks for a reply either way.</>}
+                      {outreachType === "followup" && businessType === "dealership" && <>Checks in with {prospect.name}, notes the first email may have landed in Promotions, reminds them the vehicle platform is still live on our servers, and asks for a reply either way.</>}
                     </p>
                   </div>
                   <div className="flex flex-col gap-1">
