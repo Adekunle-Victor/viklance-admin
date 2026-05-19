@@ -3,11 +3,12 @@ import { authFetch } from "@/lib/api";
 
 interface OutreachState {
   loading:       boolean;
+  importing:     boolean;
   error:         string | null;
   lastSentCount: number | null;
 }
 
-const initialState: OutreachState = { loading: false, error: null, lastSentCount: null };
+const initialState: OutreachState = { loading: false, importing: false, error: null, lastSentCount: null };
 
 export const bulkSend = createAsyncThunk(
   "outreach/bulkSend",
@@ -27,6 +28,29 @@ export const bulkSend = createAsyncThunk(
   }
 );
 
+type DemoRow = {
+  name:              string;
+  frontend_demo_url: string;
+  admin_demo_url:    string;
+  demo_email:        string;
+  demo_password:     string;
+};
+
+export const importDemo = createAsyncThunk<
+  { updated: number; notFound: string[] },
+  DemoRow[],
+  { rejectValue: string }
+>("outreach/importDemo", async (rows, { rejectWithValue }) => {
+  const res = await authFetch("/api/outreach/import-demo", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(rows),
+  });
+  const data = await res.json();
+  if (!res.ok) return rejectWithValue(data.error ?? "Import failed");
+  return data as { updated: number; notFound: string[] };
+});
+
 const outreachSlice = createSlice({
   name: "outreach",
   initialState,
@@ -41,9 +65,15 @@ const outreachSlice = createSlice({
         state.loading       = false;
         state.lastSentCount = action.payload.sent;
       })
-      .addCase(bulkSend.rejected,  (state, action) => {
+      .addCase(bulkSend.rejected,    (state, action) => {
         state.loading = false;
         state.error   = action.payload as string;
+      })
+      .addCase(importDemo.pending,   (state) => { state.importing = true; state.error = null; })
+      .addCase(importDemo.fulfilled, (state) => { state.importing = false; })
+      .addCase(importDemo.rejected,  (state, action) => {
+        state.importing = false;
+        state.error     = action.payload as string;
       });
   },
 });

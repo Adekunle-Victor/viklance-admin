@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchProspects } from "@/store/slices/prospects.slice";
-import { bulkSend }       from "@/store/slices/outreach.slice";
+import { bulkSend, importDemo } from "@/store/slices/outreach.slice";
 import toast from "react-hot-toast";
 import { useRouter }      from "next/navigation";
 
@@ -18,12 +18,14 @@ export default function OutreachPage() {
   const router   = useRouter();
   const user     = useAppSelector((s) => s.auth.user);
   const { items, loading } = useAppSelector((s) => s.prospects);
-  const { loading: sending } = useAppSelector((s) => s.outreach);
+  const { loading: sending, importing } = useAppSelector((s) => s.outreach);
 
   const [emailType,    setEmailType]    = useState<EmailType>("followup");
   const [businessType, setBusinessType] = useState<BusinessType>("ecommerce");
   const [selected,     setSelected]     = useState<Set<number>>(new Set());
   const [message,      setMessage]      = useState("");
+  const [csvRows,      setCsvRows]      = useState<{ name: string; frontend_demo_url: string; admin_demo_url: string; demo_email: string; demo_password: string }[]>([]);
+  const [csvFileName,  setCsvFileName]  = useState<string | null>(null);
 
   const isAdmin = user?.user_metadata?.role === "super_admin";
 
@@ -65,6 +67,49 @@ export default function OutreachPage() {
     } else {
       toast.error((result.payload as string) || "Send failed");
     }
+  };
+
+  const handleCsvFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text  = (ev.target?.result as string) ?? "";
+      const lines = text.trim().split("\n");
+      const rows  = lines.slice(1).map((line) => {
+        const [name, frontend_demo_url, admin_demo_url, demo_email, demo_password] =
+          line.split(",").map((f) => f.trim());
+        return { name: name ?? "", frontend_demo_url: frontend_demo_url ?? "", admin_demo_url: admin_demo_url ?? "", demo_email: demo_email ?? "", demo_password: demo_password ?? "" };
+      }).filter((r) => r.name);
+      setCsvRows(rows);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImport = async () => {
+    if (csvRows.length === 0 || importing) return;
+    const result = await dispatch(importDemo(csvRows));
+    if (importDemo.fulfilled.match(result)) {
+      const { updated, notFound } = result.payload;
+      const msg = notFound.length > 0
+        ? `Updated ${updated} · Not found: ${notFound.join(", ")}`
+        : `Updated ${updated} prospect${updated !== 1 ? "s" : ""}`;
+      toast.success(msg, { duration: 6000 });
+      setCsvRows([]);
+      setCsvFileName(null);
+    } else {
+      toast.error((result.payload as string) || "Import failed");
+    }
+  };
+
+  const downloadTemplate = () => {
+    const csv  = "name,frontend_demo_url,admin_demo_url,demo_email,demo_password\n,,,," ;
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = "demo-import-template.csv"; a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (!isAdmin) return null;
@@ -221,6 +266,53 @@ export default function OutreachPage() {
               ) : selected.size === 0 ? "Select prospects to send" : `Send to ${selected.size} prospect${selected.size !== 1 ? "s" : ""} ↗`}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* CSV Import */}
+      <div className="border border-neutral-200 rounded-2xl p-5 flex flex-col gap-4 bg-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold tracking-widest uppercase text-neutral-500">Import Demo Data</p>
+            <p className="text-xs text-neutral-400 mt-0.5">Upload a CSV to bulk-set demo URLs and credentials on prospects</p>
+          </div>
+          <button
+            onClick={downloadTemplate}
+            className="text-xs font-semibold text-neutral-500 hover:text-neutral-900 transition-colors underline underline-offset-2"
+          >
+            Download template
+          </button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <label className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-neutral-300 bg-neutral-50 cursor-pointer hover:border-neutral-500 transition-colors text-sm text-neutral-600 font-medium select-none">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 1v8M4 6l3-3 3 3M1 11h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {csvFileName ?? "Choose CSV file"}
+            <input type="file" accept=".csv" className="sr-only" onChange={handleCsvFile} />
+          </label>
+
+          {csvRows.length > 0 && (
+            <span className="text-xs text-neutral-500 font-medium">
+              {csvRows.length} row{csvRows.length !== 1 ? "s" : ""} ready to import
+            </span>
+          )}
+
+          <button
+            disabled={csvRows.length === 0 || importing}
+            onClick={handleImport}
+            className="ml-auto flex items-center gap-2 bg-neutral-900 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-neutral-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {importing ? (
+              <>
+                <svg className="animate-spin" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="18" strokeDashoffset="8" strokeLinecap="round" />
+                </svg>
+                Importing…
+              </>
+            ) : "Upload & Import"}
+          </button>
         </div>
       </div>
     </div>
