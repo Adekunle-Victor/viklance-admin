@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { updatePayoutStatus } from "@/store/slices/payouts.slice";
 import { Payout, PAYOUT_STATUS_COLORS } from "@/lib/payouts.types";
-import { gooeyToast } from "goey-toast";
+import toast from "react-hot-toast";
 import Pagination from "@/components/Pagination.component";
 
 const PAGE_SIZE = 10;
@@ -33,12 +33,9 @@ export default function PayoutsTable({ payouts, loading }: PayoutsTableProps) {
     const result = await dispatch(updatePayoutStatus({ id: String(id), status }));
     setBusy(null);
     if (updatePayoutStatus.fulfilled.match(result)) {
-      gooeyToast.success(
-        status === "Paid" ? "Payout approved" : "Payout rejected",
-        { description: status === "Paid" ? "Marked as paid successfully." : "This request has been rejected." }
-      );
+      toast.success(status === "Paid" ? "Payout approved" : "Payout rejected");
     } else {
-      gooeyToast.error("Action failed", { description: "Could not update payout." });
+      toast.error("Action failed");
     }
   };
 

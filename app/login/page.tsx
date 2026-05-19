@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { login, clearError } from "@/store/slices/auth.slice";
-import { gooeyToast } from "goey-toast";
+import toast from "react-hot-toast";
 
 export default function LoginPage() {
   const router    = useRouter();
@@ -20,10 +20,10 @@ export default function LoginPage() {
     dispatch(clearError());
     const result = await dispatch(login({ email, password }));
     if (login.fulfilled.match(result)) {
-      gooeyToast.success("Welcome back!", { description: "You are now signed in." });
+      toast.success("Welcome back!");
       router.push("/dashboard");
     } else {
-      gooeyToast.error("Sign in failed", { description: String((result as any).error?.message ?? "Invalid credentials") });
+      toast.error(String((result as any).error?.message ?? "Invalid credentials"));
     }
   };
 

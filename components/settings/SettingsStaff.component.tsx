@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { gooeyToast } from "goey-toast";
+import toast from "react-hot-toast";
 import { authFetch } from "@/lib/api";
 
 interface StaffMember {
@@ -54,7 +54,7 @@ export default function SettingsStaff() {
     if (!res.ok) { setError(data.error ?? "Failed to create staff"); return; }
     setStaff((prev) => [data, ...prev]);
     setForm({ email: "", password: "", full_name: "" });
-    gooeyToast.success("Staff added", { description: `${data.email} can now log in.` });
+    toast.success(`Staff added — ${data.email} can now log in`);
   };
 
   const deleteStaff = async (member: StaffMember) => {
@@ -64,9 +64,9 @@ export default function SettingsStaff() {
     setDeleting(null);
     if (res.ok) {
       setStaff((prev) => prev.filter((s) => s.id !== member.id));
-      gooeyToast.success("Staff removed", { description: `${member.email} has been deleted.` });
+      toast.success(`${member.email} removed`);
     } else {
-      gooeyToast.error("Failed to remove staff");
+      toast.error("Failed to remove staff");
     }
   };
 

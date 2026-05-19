@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { createProspect, clearError } from "@/store/slices/prospects.slice";
 import { useAppSelector } from "@/store/hooks";
-import { gooeyToast } from "goey-toast";
+import toast from "react-hot-toast";
 
 interface AddProspectDrawerProps {
   onClose: () => void;
@@ -40,10 +40,10 @@ export default function AddProspectDrawer({ onClose }: AddProspectDrawerProps) {
     }));
     setLoading(false);
     if (createProspect.fulfilled.match(result)) {
-      gooeyToast.success("Prospect added", { description: `@${form.instagram_handle} has been registered.` });
+      toast.success(`Prospect added — @${form.instagram_handle} registered`);
       onClose();
     } else {
-      gooeyToast.error("Failed to add", { description: result.payload as string });
+      toast.error((result.payload as string) || "Failed to add");
     }
   };
 

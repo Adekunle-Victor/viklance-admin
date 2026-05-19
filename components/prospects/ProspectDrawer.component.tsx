@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { fetchProspect, updateProspect, updateProspectStatus, updateProspectNotes, markProspectDemoReady, sendProspectEmail } from "@/store/slices/prospects.slice";
 import { Prospect, ProspectStatus, PROSPECT_STATUSES, STATUS_COLORS } from "@/lib/prospects.types";
-import { gooeyToast } from "goey-toast";
+import toast from "react-hot-toast";
 
 interface ProspectDrawerProps {
   prospect:  Prospect;
@@ -66,11 +66,11 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
     }));
     setBusy(false);
     if (updateProspect.fulfilled.match(result)) {
-      gooeyToast.success("Prospect updated");
+      toast.success("Prospect updated");
       setEditDetails(false);
       onUpdated(result.payload as Prospect);
     } else {
-      gooeyToast.error("Update failed", { description: result.payload as string });
+      toast.error((result.payload as string) || "Update failed");
     }
   };
 
@@ -85,11 +85,11 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
     }));
     setEmailSending(false);
     if (sendProspectEmail.fulfilled.match(result)) {
-      gooeyToast.success("Email sent", { description: `${outreachType === "demo" ? "Demo" : outreachType === "proposal" ? "Proposal" : "Follow-up"} email sent to ${prospect.email}` });
+      toast.success(`${outreachType === "demo" ? "Demo" : outreachType === "proposal" ? "Proposal" : "Follow-up"} email sent to ${prospect.email}`);
       setOutreachType(null);
       setOutreachMessage("");
     } else {
-      gooeyToast.error("Failed to send", { description: result.payload as string });
+      toast.error((result.payload as string) || "Failed to send");
     }
   };
 
@@ -105,10 +105,10 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
     }));
     setDemoSaving(false);
     if (markProspectDemoReady.fulfilled.match(result)) {
-      gooeyToast.success("Demo marked as ready", { description: `${prospect.assigned_name} has been notified.` });
+      toast.success(`Demo ready — ${prospect.assigned_name} notified`);
       onUpdated(result.payload as Prospect);
     } else {
-      gooeyToast.error("Failed", { description: "Could not mark demo as ready." });
+      toast.error("Failed");
     }
   };
 
@@ -118,10 +118,10 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
     const result = await dispatch(updateProspectStatus({ id: prospect.id, status }));
     setBusy(false);
     if (updateProspectStatus.fulfilled.match(result)) {
-      gooeyToast.success("Status updated", { description: `Moved to "${status}"` });
+      toast.success(`Moved to "${status}"`);
       onUpdated(result.payload as Prospect);
     } else {
-      gooeyToast.error("Update failed", { description: "Could not change status." });
+      toast.error("Update failed");
     }
   };
 
@@ -130,11 +130,11 @@ export default function ProspectDrawer({ prospect, isAdmin, onClose, onUpdated }
     const result = await dispatch(updateProspectNotes({ id: prospect.id, notes }));
     setBusy(false);
     if (updateProspectNotes.fulfilled.match(result)) {
-      gooeyToast.success("Notes saved");
+      toast.success("Notes saved");
       setEditNotes(false);
       onUpdated(result.payload as Prospect);
     } else {
-      gooeyToast.error("Save failed", { description: "Could not save notes." });
+      toast.error("Save failed");
     }
   };
 

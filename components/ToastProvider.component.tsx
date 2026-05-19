@@ -1,8 +1,7 @@
 "use client";
 
-import { GooeyToaster } from "goey-toast";
-import "goey-toast/styles.css";
+import { Toaster } from "react-hot-toast";
 
 export default function ToastProvider() {
-  return <GooeyToaster position="top-center" theme="light" closeButton />;
+  return <Toaster position="top-center" toastOptions={{ duration: 4000 }} />;
 }

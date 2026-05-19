@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateLeadStatus, markDemoReady } from "@/store/slices/leads.slice";
 import { Lead, LeadStatus, STATUS_COLORS } from "@/lib/leads.types";
-import { gooeyToast } from "goey-toast";
+import toast from "react-hot-toast";
 
 interface LeadDrawerProps {
   lead:           Lead;
@@ -30,10 +30,10 @@ export default function LeadDrawer({ lead, onClose, onStatusChange }: LeadDrawer
     const result = await dispatch(markDemoReady({ id: String(lead.id), demo_url: demoUrl.trim() }));
     setDemoSaving(false);
     if (markDemoReady.fulfilled.match(result)) {
-      gooeyToast.success("Demo marked as ready", { description: "All staff have been notified." });
+      toast.success("Demo marked as ready");
       onStatusChange(result.payload as Lead);
     } else {
-      gooeyToast.error("Failed", { description: "Could not mark demo as ready." });
+      toast.error("Failed");
     }
   };
 
@@ -43,10 +43,10 @@ export default function LeadDrawer({ lead, onClose, onStatusChange }: LeadDrawer
     const result = await dispatch(updateLeadStatus({ id: String(lead.id), status }));
     setBusy(false);
     if (updateLeadStatus.fulfilled.match(result)) {
-      gooeyToast.success("Status updated", { description: `Moved to "${status}"` });
+      toast.success(`Moved to "${status}"`);
       onStatusChange(result.payload as Lead);
     } else {
-      gooeyToast.error("Update failed", { description: "Could not change lead status." });
+      toast.error("Update failed");
     }
   };
 

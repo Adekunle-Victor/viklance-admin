@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { updateProjectStatus } from "@/store/slices/projects.slice";
 import { Project, ProjectStatus, PROJECT_STATUS_COLORS } from "@/lib/projects.types";
-import { gooeyToast } from "goey-toast";
+import toast from "react-hot-toast";
 
 interface ProjectDrawerProps {
   project:        Project;
@@ -27,10 +27,10 @@ export default function ProjectDrawer({ project, onClose, onStatusChange }: Proj
     const result = await dispatch(updateProjectStatus({ id: String(project.id), status }));
     setBusy(false);
     if (updateProjectStatus.fulfilled.match(result)) {
-      gooeyToast.success("Status updated", { description: `Moved to "${status}"` });
+      toast.success(`Moved to "${status}"`);
       onStatusChange(result.payload as Project);
     } else {
-      gooeyToast.error("Update failed", { description: "Could not change project status." });
+      toast.error("Update failed");
     }
   };
 

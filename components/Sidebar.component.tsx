@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/auth.slice";
-import { gooeyToast } from "goey-toast";
+import toast from "react-hot-toast";
 
 const adminNav = [
   {
@@ -140,7 +140,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const handleLogout = async () => {
     setConfirm(false);
     await dispatch(logout());
-    gooeyToast.success("Signed out", { description: "You have been logged out." });
+    toast.success("Signed out");
     router.push("/login");
   };
 

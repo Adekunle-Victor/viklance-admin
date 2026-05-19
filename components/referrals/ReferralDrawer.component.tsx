@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { markReferrerPaid } from "@/store/slices/referrals.slice";
 import { Referrer, PAYOUT_COLORS } from "@/lib/referrals.types";
-import { gooeyToast } from "goey-toast";
+import toast from "react-hot-toast";
 
 interface ReferralDrawerProps {
   referrer: Referrer;
@@ -26,10 +26,10 @@ export default function ReferralDrawer({ referrer, onClose, onPaid }: ReferralDr
     const result = await dispatch(markReferrerPaid(referrer.id));
     setBusy(false);
     if (markReferrerPaid.fulfilled.match(result)) {
-      gooeyToast.success("Payout marked as paid", { description: `${referrer.name}'s payout has been recorded.` });
+      toast.success(`${referrer.name}'s payout marked as paid`);
       onPaid({ ...referrer, payout_status: "Paid" });
     } else {
-      gooeyToast.error("Failed", { description: "Could not update payout status." });
+      toast.error("Failed");
     }
   };
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchProspects } from "@/store/slices/prospects.slice";
 import { bulkSend }       from "@/store/slices/outreach.slice";
-import { gooeyToast }     from "goey-toast";
+import toast from "react-hot-toast";
 import { useRouter }      from "next/navigation";
 
 type EmailType    = "demo" | "proposal" | "followup";
@@ -59,13 +59,11 @@ export default function OutreachPage() {
       message:      message.trim() || undefined,
     }));
     if (bulkSend.fulfilled.match(result)) {
-      gooeyToast.success(`Sent to ${result.payload.sent} prospect${result.payload.sent !== 1 ? "s" : ""}`, {
-        description: `${TYPE_LABELS[emailType]} · ${BIZ_LABELS[businessType]}`,
-      });
+      toast.success(`Sent to ${result.payload.sent} prospect${result.payload.sent !== 1 ? "s" : ""} — ${TYPE_LABELS[emailType]} · ${BIZ_LABELS[businessType]}`);
       setSelected(new Set());
       setMessage("");
     } else {
-      gooeyToast.error("Send failed", { description: result.payload as string });
+      toast.error((result.payload as string) || "Send failed");
     }
   };
 
