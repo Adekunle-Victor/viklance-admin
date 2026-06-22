@@ -53,6 +53,26 @@ const adminNav = [
     ),
   },
   {
+    label: "Activity",
+    href: "/dashboard/activity",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M2 8h2l2-5 3 10 2-5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    label: "KPI",
+    href: "/dashboard/kpi",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M2 12l3.5-4 3 2.5L12 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 5h2M12 5v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3" />
+      </svg>
+    ),
+  },
+  {
     label: "Outreach",
     href: "/dashboard/outreach",
     icon: (
