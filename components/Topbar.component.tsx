@@ -11,7 +11,9 @@ const pageLabels: Record<string, string> = {
   "/dashboard/projects":   "Projects",
   "/dashboard/referrals":  "Referrals",
   "/dashboard/payouts":    "Payouts",
-  "/dashboard/prospects":  "Prospects",
+  "/dashboard/prospects":  "Accounts",
+  "/dashboard/staff":      "Sales Team",
+  "/dashboard/outreach":   "Outreach",
   "/dashboard/settings":   "Settings",
 };
 
@@ -35,7 +37,6 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   const dispatch = useAppDispatch();
 
   const user  = useAppSelector((s) => s.auth.user);
-  const role  = useAppSelector((s) => s.auth.role);
   const items = useAppSelector((s) => s.notifications.items);
 
   const fullName  = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? "";
@@ -45,7 +46,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
     .slice(0, 2)
     .map((w: string) => w[0].toUpperCase())
     .join("") || "?";
-  const roleLabel = role === "super_admin" ? "Admin" : role === "staff" ? "Staff" : "";
+  const roleLabel = "Admin";
 
   const unread = items.filter((n) => !n.read).length;
 
@@ -118,7 +119,7 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
 
           {/* Dropdown */}
           {open && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-neutral-200 rounded-2xl shadow-lg overflow-hidden z-50">
+            <div className="fixed left-4 right-4 top-18.25 sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-white border border-neutral-200 rounded-2xl shadow-lg overflow-hidden z-50">
 
               {/* Header */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">

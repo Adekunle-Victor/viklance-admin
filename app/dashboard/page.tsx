@@ -6,7 +6,6 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchLeads } from "@/store/slices/leads.slice";
 import { fetchReferrers } from "@/store/slices/referrals.slice";
 import { STATUS_COLORS } from "@/lib/leads.types";
-import StaffDashboard from "@/components/StaffDashboard.component";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-NG", { day: "numeric", month: "short" });
@@ -16,7 +15,6 @@ export default function DashboardPage() {
   const dispatch = useAppDispatch();
   const router   = useRouter();
 
-  const role     = useAppSelector((s) => s.auth.role);
   const [mounted, setMounted] = useState(false);
 
   const { items: leads,     loading: leadsLoading }     = useAppSelector((s) => s.leads);
@@ -28,14 +26,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!mounted) return;
-    if (role !== "staff") {
-      dispatch(fetchLeads({}));
-      dispatch(fetchReferrers());
-    }
-  }, [dispatch, role, mounted]);
+    dispatch(fetchLeads({}));
+    dispatch(fetchReferrers());
+  }, [dispatch, mounted]);
 
   if (!mounted) return null;
-  if (role === "staff") return <StaffDashboard />;
 
   const totalLeads      = leads.length;
   const demoReadyLeads  = leads.filter((l) => l.demo_ready).length;

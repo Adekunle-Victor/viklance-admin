@@ -4,7 +4,7 @@ import leadsReducer         from "./slices/leads.slice";
 import referralsReducer     from "./slices/referrals.slice";
 import projectsReducer      from "./slices/projects.slice";
 import payoutsReducer       from "./slices/payouts.slice";
-import prospectsReducer     from "./slices/prospects.slice";
+import accountsReducer      from "./slices/accounts.slice";
 import notificationsReducer from "./slices/notifications.slice";
 import outreachReducer      from "./slices/outreach.slice";
 
@@ -15,7 +15,7 @@ export const store = configureStore({
     referrals:     referralsReducer,
     projects:      projectsReducer,
     payouts:       payoutsReducer,
-    prospects:     prospectsReducer,
+    accounts:      accountsReducer,
     notifications: notificationsReducer,
     outreach:      outreachReducer,
   },

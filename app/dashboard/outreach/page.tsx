@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchProspects } from "@/store/slices/prospects.slice";
+import { fetchAccounts } from "@/store/slices/accounts.slice";
 import { bulkSend, importDemo } from "@/store/slices/outreach.slice";
 import toast from "react-hot-toast";
 import { useRouter }      from "next/navigation";
@@ -17,7 +17,7 @@ export default function OutreachPage() {
   const dispatch = useAppDispatch();
   const router   = useRouter();
   const user     = useAppSelector((s) => s.auth.user);
-  const { items, loading } = useAppSelector((s) => s.prospects);
+  const { items, loading } = useAppSelector((s) => s.accounts);
   const { loading: sending, importing } = useAppSelector((s) => s.outreach);
 
   const [emailType,    setEmailType]    = useState<EmailType>("followup");
@@ -31,10 +31,10 @@ export default function OutreachPage() {
 
   useEffect(() => {
     if (!isAdmin) { router.replace("/dashboard"); return; }
-    dispatch(fetchProspects({}));
+    dispatch(fetchAccounts({}));
   }, [dispatch, isAdmin]);
 
-  const prospects = items.filter((p) => !!p.email);
+  const prospects = items.filter((a) => !!a.email);
 
   const toggleOne = (id: number) => {
     setSelected((prev) => {
@@ -120,7 +120,7 @@ export default function OutreachPage() {
       <div>
         <h1 className="text-2xl font-black text-neutral-900 tracking-tight">Outreach</h1>
         <p className="text-sm text-neutral-500 mt-1">
-          {loading ? "Loading prospects…" : `${prospects.length} prospect${prospects.length !== 1 ? "s" : ""} with an email address`}
+          {loading ? "Loading accounts…" : `${prospects.length} account${prospects.length !== 1 ? "s" : ""} with an email address`}
         </p>
       </div>
 
@@ -181,7 +181,7 @@ export default function OutreachPage() {
                       {p.name}
                     </span>
                     <span className={`text-xs truncate ${selected.has(p.id) ? "text-neutral-300" : "text-neutral-500"}`}>
-                      @{p.instagram_handle} · {p.email}
+                      {p.email}
                     </span>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
@@ -263,7 +263,7 @@ export default function OutreachPage() {
                   </svg>
                   Sending…
                 </>
-              ) : selected.size === 0 ? "Select prospects to send" : `Send to ${selected.size} prospect${selected.size !== 1 ? "s" : ""} ↗`}
+              ) : selected.size === 0 ? "Select accounts to send" : `Send to ${selected.size} account${selected.size !== 1 ? "s" : ""} ↗`}
             </button>
           </div>
         </div>

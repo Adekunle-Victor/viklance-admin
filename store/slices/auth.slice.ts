@@ -5,12 +5,12 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 interface AuthUser {
   id:            string;
   email:         string;
-  user_metadata: { role?: "super_admin" | "staff"; full_name?: string; name?: string; [key: string]: unknown };
+  user_metadata: { role?: "super_admin"; full_name?: string; name?: string; [key: string]: unknown };
 }
 
 interface AuthState {
   user:         AuthUser | null;
-  role:         "super_admin" | "staff" | null;
+  role:         "super_admin" | null;
   accessToken:  string | null;
   refreshToken: string | null;
   loading:      boolean;

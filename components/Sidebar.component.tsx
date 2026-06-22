@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppDispatch } from "@/store/hooks";
 import { logout } from "@/store/slices/auth.slice";
 import toast from "react-hot-toast";
 
@@ -30,13 +30,25 @@ const adminNav = [
     ),
   },
   {
-    label: "Prospects",
+    label: "Accounts",
     href: "/dashboard/prospects",
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <circle cx="8" cy="6" r="3" stroke="currentColor" strokeWidth="1.3" />
         <path d="M2 14c0-2.21 2.686-4 6-4s6 1.79 6 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
         <path d="M12.5 2.5l1 1-3 3-1.5-.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    label: "Staff",
+    href: "/dashboard/staff",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="5.5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M1 13c0-2.21 2.015-4 4.5-4S10 10.79 10 13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <circle cx="11.5" cy="5" r="2" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M11.5 9c2.21 0 3.5 1.343 3.5 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -92,31 +104,6 @@ const adminNav = [
   },
 ];
 
-const staffNav = [
-  {
-    label: "Overview",
-    href: "/dashboard",
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
-        <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
-        <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
-        <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3" />
-      </svg>
-    ),
-  },
-  {
-    label: "Prospects",
-    href: "/dashboard/prospects",
-    icon: (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <circle cx="8" cy="6" r="3" stroke="currentColor" strokeWidth="1.3" />
-        <path d="M2 14c0-2.21 2.686-4 6-4s6 1.79 6 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-        <path d="M12.5 2.5l1 1-3 3-1.5-.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-];
 
 interface SidebarProps {
   open: boolean;
@@ -127,9 +114,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname  = usePathname();
   const router    = useRouter();
   const dispatch  = useAppDispatch();
-  const role      = useAppSelector((s) => s.auth.role);
-  const isAdmin   = role === "super_admin";
-  const nav       = isAdmin ? adminNav : staffNav;
   const [confirm, setConfirm] = useState(false);
 
   const navigate = (href: string) => {
@@ -178,13 +162,13 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <div className="h-16 flex items-center px-6 border-b border-neutral-200 shrink-0">
           <span className="text-sm font-black tracking-widest uppercase text-neutral-900">Viklance</span>
           <span className="ml-2 text-[10px] font-semibold tracking-widest uppercase text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">
-            {role === "super_admin" ? "Admin" : "Staff"}
+            Admin
           </span>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 flex flex-col gap-3 overflow-y-auto">
-          {nav.map((item) => {
+          {adminNav.map((item) => {
             const active = pathname === item.href;
             return (
               <button
